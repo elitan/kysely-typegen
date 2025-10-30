@@ -1,0 +1,46 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Integration: Full pipeline should generate complete TypeScript types from database 1`] = `
+"import type { ColumnType } from 'kysely';
+
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S, I | undefined, U>
+  : ColumnType<T, T | undefined, T>;
+
+export type StatusEnum = 'pending' | 'approved' | 'rejected';
+
+export interface Comment {
+  id: Generated<number>;
+  post_id: number;
+  user_id: number;
+  content: string;
+  status: StatusEnum;
+  created_at: ColumnType<Date, Date | string, Date | string>;
+}
+
+export interface Post {
+  id: Generated<number>;
+  user_id: number;
+  title: string;
+  content: string | null;
+  published_at: ColumnType<Date, Date | string, Date | string> | null;
+  view_count: number;
+}
+
+export interface User {
+  id: Generated<number>;
+  email: string;
+  username: string;
+  created_at: ColumnType<Date, Date | string, Date | string>;
+  updated_at: ColumnType<Date, Date | string, Date | string> | null;
+  is_active: boolean;
+  metadata: unknown | null;
+}
+
+export interface DB {
+  comments: Comment;
+  posts: Post;
+  users: User;
+}
+"
+`;
