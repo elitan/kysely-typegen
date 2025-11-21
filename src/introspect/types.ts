@@ -5,9 +5,11 @@
 export type ColumnMetadata = {
   name: string;
   dataType: string;
+  dataTypeSchema?: string;
   isNullable: boolean;
   isAutoIncrement: boolean;
   hasDefaultValue: boolean;
+  isArray?: boolean;
   comment?: string;
 };
 
@@ -15,6 +17,8 @@ export type TableMetadata = {
   schema: string;
   name: string;
   columns: ColumnMetadata[];
+  isView?: boolean;
+  isPartition?: boolean;
   comment?: string;
 };
 

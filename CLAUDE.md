@@ -86,27 +86,11 @@ src/transform.ts       → test/transform.test.ts
 2. Add test cases in `test/transform.test.ts`
 3. Run `bun test --watch test/transform.test.ts`
 
-### Adding New Database Dialects (MySQL, SQLite)
-
-1. Create new introspector: `src/introspect/mysql.ts`
-2. Implement `introspectDatabase()` returning `DatabaseMetadata`
-3. Add dialect-specific type mappings in new transformer or extend existing
-4. Add tests: `test/introspect/mysql.test.ts`
-5. Update CLI to detect/support new dialect
-
 ### Adding AST Node Types
 
 1. Add node type to `src/ast/nodes.ts`
 2. Add serialization logic to `src/ast/serialize.ts`
 3. Write tests in `test/ast/` first (TDD!)
-
-## Test Database
-
-The test database (PostgreSQL 16) runs in Docker with this schema:
-- **users** table: id, email, username, created_at, updated_at, is_active, metadata
-- **posts** table: id, user_id, title, content, published_at, view_count
-- **comments** table: id, post_id, user_id, content, status, created_at
-- **status_enum**: 'pending' | 'approved' | 'rejected'
 
 Schema defined in: `test/fixtures/init.sql`
 
@@ -119,21 +103,6 @@ This project uses strict TDD:
 2. Implement minimal code to pass (GREEN)
 3. Refactor (REFACTOR)
 4. Use `bun test --watch` continuously
-
-### Error Handling
-
-CLI errors should be user-friendly with:
-- Clear error message (what went wrong)
-- Helpful suggestion (how to fix)
-- Use chalk for color coding (red for errors, yellow for warnings)
-
-Example:
-```typescript
-console.error(chalk.red('✗ Error: DATABASE_URL environment variable is required'));
-console.error('');
-console.error('Set it in your environment:');
-console.error(chalk.cyan('  export DATABASE_URL=postgres://...'));
-```
 
 ### Type Safety
 
@@ -200,9 +169,7 @@ This makes auto-increment and default-value columns optional during insert opera
 - `--include-pattern <pattern>` - Only include matching tables (glob)
 - `--exclude-pattern <pattern>` - Exclude matching tables (glob)
 
-## Known Limitations
+## Notes
 
-- **Singularization**: Currently uses naive "remove trailing 's'" logic. TODO: Use proper library like `pluralize`
-- **PostgreSQL Only**: MySQL and SQLite support planned but not yet implemented
-- **Array Types**: PostgreSQL array types not yet supported
-- **JSON Types**: Currently typed as `unknown` - no JSONColumnType support yet
+- `kysely-typegen` is a successor of `kysely-codegen`. You do have access to the source code of `kysely-codegen`.
+- do not use emojis. ever.

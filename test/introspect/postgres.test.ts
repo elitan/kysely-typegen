@@ -84,4 +84,116 @@ describe('PostgreSQL Introspector', () => {
     expect(statusEnum).toBeDefined();
     expect(statusEnum?.values).toEqual(['pending', 'approved', 'rejected']);
   });
+
+  test('should introspect array columns', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const users = metadata.tables.find((t) => t.name === 'users');
+    expect(users).toBeDefined();
+
+    const tagsColumn = users?.columns.find((c) => c.name === 'tags');
+    expect(tagsColumn).toBeDefined();
+    expect(tagsColumn?.dataType).toBe('text');
+    expect(tagsColumn?.isArray).toBe(true);
+
+    const scoresColumn = users?.columns.find((c) => c.name === 'scores');
+    expect(scoresColumn).toBeDefined();
+    expect(scoresColumn?.dataType).toBe('int4');
+    expect(scoresColumn?.isArray).toBe(true);
+    expect(scoresColumn?.isNullable).toBe(true);
+  });
+
+  test('should introspect column comments', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const users = metadata.tables.find((t) => t.name === 'users');
+    const emailColumn = users?.columns.find((c) => c.name === 'email');
+
+    expect(emailColumn?.comment).toBe('User email address');
+
+    const tagsColumn = users?.columns.find((c) => c.name === 'tags');
+    expect(tagsColumn?.comment).toBe('Array of user tags');
+  });
+
+  test('should introspect materialized views', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const userStats = metadata.tables.find((t) => t.name === 'user_stats');
+    expect(userStats).toBeDefined();
+    expect(userStats?.isView).toBe(true);
+    expect(userStats?.columns.length).toBeGreaterThan(0);
+
+    const idColumn = userStats?.columns.find((c) => c.name === 'id');
+    expect(idColumn).toBeDefined();
+    expect(idColumn?.isAutoIncrement).toBe(false);
+  });
+
+  test('should introspect domain types as their base types', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const posts = metadata.tables.find((t) => t.name === 'posts');
+    const viewCountColumn = posts?.columns.find((c) => c.name === 'view_count');
+
+    expect(viewCountColumn).toBeDefined();
+    expect(viewCountColumn?.dataType).toBe('int4');
+    expect(viewCountColumn?.isNullable).toBe(false);
+  });
+
+  test('should introspect multiple schemas', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public', 'test_schema'] });
+
+    const tableSchemas = metadata.tables.map((t) => t.schema);
+    expect(tableSchemas).toContain('public');
+    expect(tableSchemas).toContain('test_schema');
+
+    const tasksTable = metadata.tables.find(
+      (t) => t.schema === 'test_schema' && t.name === 'tasks'
+    );
+    expect(tasksTable).toBeDefined();
+    expect(tasksTable?.columns.length).toBeGreaterThan(0);
+  });
+
+  test('should introspect enums from different schemas', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public', 'test_schema'] });
+
+    const enumSchemas = metadata.enums.map((e) => e.schema);
+    expect(enumSchemas).toContain('public');
+    expect(enumSchemas).toContain('test_schema');
+
+    const statusEnum = metadata.enums.find(
+      (e) => e.schema === 'public' && e.name === 'status_enum'
+    );
+    expect(statusEnum?.values).toEqual(['pending', 'approved', 'rejected']);
+
+    const priorityEnum = metadata.enums.find(
+      (e) => e.schema === 'test_schema' && e.name === 'priority_enum'
+    );
+    expect(priorityEnum?.values).toEqual(['low', 'medium', 'high']);
+  });
+
+  test('should handle domain types in columns (resolved to base types)', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['test_schema'] });
+
+    const tasks = metadata.tables.find((t) => t.name === 'tasks');
+    const emailColumn = tasks?.columns.find((c) => c.name === 'assignee_email');
+
+    expect(emailColumn).toBeDefined();
+    expect(emailColumn?.dataType).toBe('varchar');
+  });
+
+  test('should detect partitioned tables', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const parentTable = metadata.tables.find((t) => t.name === 'measurements');
+    expect(parentTable).toBeDefined();
+    expect(parentTable?.isPartition).toBeUndefined();
+
+    const partition1 = metadata.tables.find((t) => t.name === 'measurements_2024_q1');
+    expect(partition1).toBeDefined();
+    expect(partition1?.isPartition).toBe(true);
+
+    const partition2 = metadata.tables.find((t) => t.name === 'measurements_2024_q2');
+    expect(partition2).toBeDefined();
+    expect(partition2?.isPartition).toBe(true);
+  });
 });

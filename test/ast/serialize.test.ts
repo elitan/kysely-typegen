@@ -222,4 +222,62 @@ describe('Serializer', () => {
       expect(result).toContain('  user: User;');
     });
   });
+
+  describe('field ordering', () => {
+    test('should preserve order of properties as provided', () => {
+      const userInterface: InterfaceNode = {
+        kind: 'interface',
+        name: 'User',
+        properties: [
+          { name: 'zebra', type: { kind: 'primitive', value: 'string' }, optional: false },
+          { name: 'apple', type: { kind: 'primitive', value: 'string' }, optional: false },
+          { name: 'banana', type: { kind: 'primitive', value: 'string' }, optional: false },
+        ],
+        exported: true,
+      };
+
+      const result = serializeInterface(userInterface);
+      const lines = result.split('\n');
+
+      expect(lines[1]).toContain('zebra');
+      expect(lines[2]).toContain('apple');
+      expect(lines[3]).toContain('banana');
+    });
+
+    test('should handle mixed case properties', () => {
+      const userInterface: InterfaceNode = {
+        kind: 'interface',
+        name: 'User',
+        properties: [
+          { name: 'userId', type: { kind: 'primitive', value: 'number' }, optional: false },
+          { name: 'userName', type: { kind: 'primitive', value: 'string' }, optional: false },
+          { name: 'userEmail', type: { kind: 'primitive', value: 'string' }, optional: false },
+        ],
+        exported: true,
+      };
+
+      const result = serializeInterface(userInterface);
+      expect(result).toContain('userId');
+      expect(result).toContain('userName');
+      expect(result).toContain('userEmail');
+    });
+
+    test('should handle properties with underscores', () => {
+      const userInterface: InterfaceNode = {
+        kind: 'interface',
+        name: 'User',
+        properties: [
+          { name: '_internal', type: { kind: 'primitive', value: 'string' }, optional: false },
+          { name: 'public_field', type: { kind: 'primitive', value: 'string' }, optional: false },
+          { name: 'created_at', type: { kind: 'primitive', value: 'Date' }, optional: false },
+        ],
+        exported: true,
+      };
+
+      const result = serializeInterface(userInterface);
+      expect(result).toContain('_internal');
+      expect(result).toContain('public_field');
+      expect(result).toContain('created_at');
+    });
+  });
 });

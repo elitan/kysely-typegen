@@ -142,7 +142,7 @@ function transformColumn(
     }
   } else {
     // Use regular type mapping
-    type = mapPostgresType(column.dataType, column.isNullable);
+    type = mapPostgresType(column.dataType, column.isNullable, column.isArray);
   }
 
   // Wrap auto-increment columns in Generated<>
@@ -193,7 +193,26 @@ function createColumnType(
  * Map PostgreSQL types to TypeScript types
  * Returns ColumnType<S, I, U> for types that need different select/insert/update types
  */
-export function mapPostgresType(pgType: string, isNullable: boolean): TypeNode {
+export function mapPostgresType(pgType: string, isNullable: boolean, isArray?: boolean): TypeNode {
+  // Handle array types (from introspection isArray flag or type name ending with [])
+  if (isArray || pgType.endsWith('[]')) {
+    const baseTypeName = pgType.endsWith('[]') ? pgType.slice(0, -2) : pgType;
+    const elementType = mapPostgresType(baseTypeName, false, false);
+    const arrayType: TypeNode = {
+      kind: 'array',
+      elementType,
+    };
+
+    if (isNullable) {
+      return {
+        kind: 'union',
+        types: [arrayType, { kind: 'primitive', value: 'null' }],
+      };
+    }
+
+    return arrayType;
+  }
+
   let baseType: TypeNode;
 
   switch (pgType) {
