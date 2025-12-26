@@ -173,16 +173,20 @@ This makes auto-increment and default-value columns optional during insert opera
 
 Use the GitHub Actions workflow to publish new versions:
 
-1. Go to **Actions → Publish to npm → Run workflow**
-2. Enter version number (e.g., `0.3.0`)
-3. The workflow will:
-   - Run tests
-   - Build package
-   - Bump version in package.json
-   - Create git tag
-   - Push to main
-   - Publish to npm
-   - Create GitHub release with auto-generated notes
+```bash
+gh workflow run publish.yml -f version=0.4.0
+```
+
+Or via GitHub UI: **Actions → Publish to npm → Run workflow**
+
+The workflow will:
+- Run tests
+- Build package
+- Bump version in package.json
+- Create git tag
+- Push to main
+- Publish to npm
+- Create GitHub release with auto-generated notes
 
 Do NOT publish manually. Always use the workflow.
 
