@@ -223,6 +223,109 @@ describe('Serializer', () => {
     });
   });
 
+  describe('string escaping', () => {
+    test('should escape apostrophes in string literals', () => {
+      expect(serializeType({ kind: 'literal', value: "don't" })).toBe("'don\\'t'");
+    });
+
+    test('should escape backslashes in string literals', () => {
+      expect(serializeType({ kind: 'literal', value: 'path\\to' })).toBe("'path\\\\to'");
+    });
+
+    test('should escape newlines in string literals', () => {
+      expect(serializeType({ kind: 'literal', value: 'line1\nline2' })).toBe("'line1\\nline2'");
+    });
+
+    test('should escape tabs in string literals', () => {
+      expect(serializeType({ kind: 'literal', value: 'col1\tcol2' })).toBe("'col1\\tcol2'");
+    });
+  });
+
+  describe('property name quoting', () => {
+    test('should quote property names with hyphens', () => {
+      const iface: InterfaceNode = {
+        kind: 'interface',
+        name: 'Test',
+        properties: [{ name: 'created-at', type: { kind: 'primitive', value: 'string' }, optional: false }],
+        exported: true,
+      };
+      const result = serializeInterface(iface);
+      expect(result).toContain("'created-at': string;");
+    });
+
+    test('should quote reserved words as property names', () => {
+      const iface: InterfaceNode = {
+        kind: 'interface',
+        name: 'Test',
+        properties: [{ name: 'class', type: { kind: 'primitive', value: 'string' }, optional: false }],
+        exported: true,
+      };
+      const result = serializeInterface(iface);
+      expect(result).toContain("'class': string;");
+    });
+
+    test('should quote property names starting with digits', () => {
+      const iface: InterfaceNode = {
+        kind: 'interface',
+        name: 'Test',
+        properties: [{ name: '123col', type: { kind: 'primitive', value: 'string' }, optional: false }],
+        exported: true,
+      };
+      const result = serializeInterface(iface);
+      expect(result).toContain("'123col': string;");
+    });
+  });
+
+  describe('union/intersection parentheses', () => {
+    test('should wrap union in parens when inside intersection', () => {
+      const type = serializeType({
+        kind: 'intersection',
+        types: [
+          {
+            kind: 'union',
+            types: [
+              { kind: 'primitive', value: 'string' },
+              { kind: 'primitive', value: 'number' },
+            ],
+          },
+          { kind: 'primitive', value: 'boolean' },
+        ],
+      });
+      expect(type).toBe('(string | number) & boolean');
+    });
+
+    test('should wrap intersection in parens when inside union', () => {
+      const type = serializeType({
+        kind: 'union',
+        types: [
+          {
+            kind: 'intersection',
+            types: [
+              { kind: 'primitive', value: 'string' },
+              { kind: 'primitive', value: 'number' },
+            ],
+          },
+          { kind: 'primitive', value: 'boolean' },
+        ],
+      });
+      expect(type).toBe('(string & number) | boolean');
+    });
+
+    test('should wrap union in parens when used as array element type', () => {
+      const type = serializeType({
+        kind: 'array',
+        elementType: {
+          kind: 'union',
+          types: [
+            { kind: 'primitive', value: 'string' },
+            { kind: 'primitive', value: 'number' },
+          ],
+        },
+      });
+      expect(type).toBe('(string | number)[]');
+    });
+  });
+
   describe('field ordering', () => {
     test('should preserve order of properties as provided', () => {
       const userInterface: InterfaceNode = {
