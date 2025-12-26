@@ -4,7 +4,7 @@
 
 export type PrimitiveTypeNode = {
   kind: 'primitive';
-  value: 'string' | 'number' | 'boolean' | 'null' | 'undefined' | 'unknown' | 'any';
+  value: 'string' | 'number' | 'boolean' | 'null' | 'undefined' | 'unknown' | 'any' | 'never' | 'bigint';
 };
 
 export type LiteralNode = {
@@ -43,6 +43,35 @@ export type RawTypeNode = {
   value: string;
 };
 
+export type TupleTypeNode = {
+  kind: 'tuple';
+  elements: TypeNode[];
+};
+
+export type ConditionalTypeNode = {
+  kind: 'conditional';
+  checkType: TypeNode;
+  extendsType: TypeNode;
+  trueType: TypeNode;
+  falseType: TypeNode;
+};
+
+export type KeyofTypeNode = {
+  kind: 'keyof';
+  type: TypeNode;
+};
+
+export type IndexAccessTypeNode = {
+  kind: 'indexAccess';
+  objectType: TypeNode;
+  indexType: TypeNode;
+};
+
+export type InferTypeNode = {
+  kind: 'infer';
+  name: string;
+};
+
 export type TypeNode =
   | PrimitiveTypeNode
   | LiteralNode
@@ -51,7 +80,12 @@ export type TypeNode =
   | ArrayTypeNode
   | GenericTypeNode
   | ReferenceTypeNode
-  | RawTypeNode;
+  | RawTypeNode
+  | TupleTypeNode
+  | ConditionalTypeNode
+  | KeyofTypeNode
+  | IndexAccessTypeNode
+  | InferTypeNode;
 
 export type PropertyNode = {
   name: string;

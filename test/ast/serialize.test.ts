@@ -223,6 +223,73 @@ describe('Serializer', () => {
     });
   });
 
+  describe('tuple types', () => {
+    test('should serialize tuple types', () => {
+      expect(serializeType({
+        kind: 'tuple',
+        elements: [
+          { kind: 'primitive', value: 'string' },
+          { kind: 'primitive', value: 'number' },
+        ],
+      })).toBe('[string, number]');
+    });
+
+    test('should serialize empty tuple', () => {
+      expect(serializeType({ kind: 'tuple', elements: [] })).toBe('[]');
+    });
+  });
+
+  describe('conditional types', () => {
+    test('should serialize conditional types', () => {
+      expect(serializeType({
+        kind: 'conditional',
+        checkType: { kind: 'reference', name: 'T' },
+        extendsType: { kind: 'primitive', value: 'string' },
+        trueType: { kind: 'primitive', value: 'number' },
+        falseType: { kind: 'primitive', value: 'boolean' },
+      })).toBe('T extends string ? number : boolean');
+    });
+
+    test('should serialize conditional with infer', () => {
+      expect(serializeType({
+        kind: 'conditional',
+        checkType: { kind: 'reference', name: 'T' },
+        extendsType: {
+          kind: 'generic',
+          name: 'Array',
+          typeArguments: [{ kind: 'infer', name: 'U' }],
+        },
+        trueType: { kind: 'reference', name: 'U' },
+        falseType: { kind: 'primitive', value: 'never' },
+      })).toBe('T extends Array<infer U> ? U : never');
+    });
+  });
+
+  describe('keyof types', () => {
+    test('should serialize keyof types', () => {
+      expect(serializeType({
+        kind: 'keyof',
+        type: { kind: 'reference', name: 'User' },
+      })).toBe('keyof User');
+    });
+  });
+
+  describe('index access types', () => {
+    test('should serialize index access types', () => {
+      expect(serializeType({
+        kind: 'indexAccess',
+        objectType: { kind: 'reference', name: 'Config' },
+        indexType: { kind: 'literal', value: 'database' },
+      })).toBe("Config['database']");
+    });
+  });
+
+  describe('infer types', () => {
+    test('should serialize infer types', () => {
+      expect(serializeType({ kind: 'infer', name: 'T' })).toBe('infer T');
+    });
+  });
+
   describe('string escaping', () => {
     test('should escape apostrophes in string literals', () => {
       expect(serializeType({ kind: 'literal', value: "don't" })).toBe("'don\\'t'");

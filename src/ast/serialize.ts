@@ -1,16 +1,21 @@
 import type {
   ArrayTypeNode,
+  ConditionalTypeNode,
   DeclarationNode,
   GenericTypeNode,
   ImportNode,
+  IndexAccessTypeNode,
+  InferTypeNode,
   InterfaceNode,
   IntersectionTypeNode,
+  KeyofTypeNode,
   LiteralNode,
   PrimitiveTypeNode,
   ProgramNode,
   PropertyNode,
   RawTypeNode,
   ReferenceTypeNode,
+  TupleTypeNode,
   TypeAliasNode,
   TypeNode,
   UnionTypeNode,
@@ -37,6 +42,16 @@ export function serializeType(node: TypeNode): string {
       return serializeReference(node);
     case 'raw':
       return serializeRaw(node);
+    case 'tuple':
+      return serializeTuple(node);
+    case 'conditional':
+      return serializeConditional(node);
+    case 'keyof':
+      return serializeKeyof(node);
+    case 'indexAccess':
+      return serializeIndexAccess(node);
+    case 'infer':
+      return serializeInfer(node);
   }
 }
 
@@ -95,6 +110,30 @@ function serializeReference(node: ReferenceTypeNode): string {
 
 function serializeRaw(node: RawTypeNode): string {
   return node.value;
+}
+
+function serializeTuple(node: TupleTypeNode): string {
+  return `[${node.elements.map(serializeType).join(', ')}]`;
+}
+
+function serializeConditional(node: ConditionalTypeNode): string {
+  const check = serializeType(node.checkType);
+  const ext = serializeType(node.extendsType);
+  const trueType = serializeType(node.trueType);
+  const falseType = serializeType(node.falseType);
+  return `${check} extends ${ext} ? ${trueType} : ${falseType}`;
+}
+
+function serializeKeyof(node: KeyofTypeNode): string {
+  return `keyof ${serializeType(node.type)}`;
+}
+
+function serializeIndexAccess(node: IndexAccessTypeNode): string {
+  return `${serializeType(node.objectType)}[${serializeType(node.indexType)}]`;
+}
+
+function serializeInfer(node: InferTypeNode): string {
+  return `infer ${node.name}`;
 }
 
 const RESERVED_WORDS = new Set([
