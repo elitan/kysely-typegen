@@ -144,6 +144,11 @@ export function mapPostgresType(
 
     case 'time':
     case 'timetz':
+    case 'interval':
+      baseType = { kind: 'primitive', value: 'string' };
+      break;
+
+    case 'money':
       baseType = { kind: 'primitive', value: 'string' };
       break;
 
@@ -154,6 +159,15 @@ export function mapPostgresType(
 
     case 'bytea':
       baseType = { kind: 'primitive', value: 'Buffer' };
+      break;
+
+    case 'int4range':
+    case 'int8range':
+    case 'numrange':
+    case 'daterange':
+    case 'tsrange':
+    case 'tstzrange':
+      baseType = { kind: 'primitive', value: 'string' };
       break;
 
     default:

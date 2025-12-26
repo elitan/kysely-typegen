@@ -60,6 +60,13 @@ export interface User {
   scores: number[] | null;
 }
 
+export interface ActiveUser {
+  id: number | null;
+  email: string | null;
+  username: string | null;
+  created_at: ColumnType<Date, Date | string, Date | string> | null;
+}
+
 export interface UserStat {
   id: number | null;
   username: string | null;
@@ -80,6 +87,7 @@ export interface DB {
   measurements_2024_q2: Measurements2024Q2;
   posts: Post;
   users: User;
+  active_users: ActiveUser;
   user_stats: UserStat;
   user_tags_view: UserTagsView;
 }

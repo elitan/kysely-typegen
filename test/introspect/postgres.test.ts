@@ -209,4 +209,24 @@ describe('PostgreSQL Introspector', () => {
     expect(tagsColumn?.isArray).toBe(true);
     expect(tagsColumn?.dataType).toBe('text');
   });
+
+  test('should introspect regular views', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const activeUsers = metadata.tables.find((t) => t.name === 'active_users');
+    expect(activeUsers).toBeDefined();
+    expect(activeUsers?.isView).toBe(true);
+    expect(activeUsers?.schema).toBe('public');
+
+    const columns = activeUsers?.columns ?? [];
+    expect(columns.length).toBe(4);
+
+    const idColumn = columns.find((c) => c.name === 'id');
+    expect(idColumn).toBeDefined();
+    expect(idColumn?.dataType).toBe('int4');
+
+    const emailColumn = columns.find((c) => c.name === 'email');
+    expect(emailColumn).toBeDefined();
+    expect(emailColumn?.dataType).toBe('varchar');
+  });
 });

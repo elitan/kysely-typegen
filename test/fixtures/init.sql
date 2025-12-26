@@ -83,6 +83,16 @@ FROM users u;
 
 CREATE INDEX ON user_tags_view (id);
 
+-- Create regular view
+CREATE VIEW active_users AS
+SELECT
+  id,
+  email,
+  username,
+  created_at
+FROM users
+WHERE is_active = true;
+
 -- Create partitioned table
 CREATE TABLE measurements (
   id SERIAL,

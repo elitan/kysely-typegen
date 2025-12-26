@@ -578,12 +578,21 @@ describe('Transform', () => {
       expect(mapPostgresType('boolean', false)).toEqual({ kind: 'primitive', value: 'boolean' });
     });
 
-    test('should map money to unknown (not yet supported)', () => {
-      expect(mapPostgresType('money', false)).toEqual({ kind: 'primitive', value: 'unknown' });
+    test('should map money to string', () => {
+      expect(mapPostgresType('money', false)).toEqual({ kind: 'primitive', value: 'string' });
     });
 
-    test('should map interval to unknown (not yet supported)', () => {
-      expect(mapPostgresType('interval', false)).toEqual({ kind: 'primitive', value: 'unknown' });
+    test('should map interval to string', () => {
+      expect(mapPostgresType('interval', false)).toEqual({ kind: 'primitive', value: 'string' });
+    });
+
+    test('should map range types to string', () => {
+      expect(mapPostgresType('int4range', false)).toEqual({ kind: 'primitive', value: 'string' });
+      expect(mapPostgresType('int8range', false)).toEqual({ kind: 'primitive', value: 'string' });
+      expect(mapPostgresType('numrange', false)).toEqual({ kind: 'primitive', value: 'string' });
+      expect(mapPostgresType('daterange', false)).toEqual({ kind: 'primitive', value: 'string' });
+      expect(mapPostgresType('tsrange', false)).toEqual({ kind: 'primitive', value: 'string' });
+      expect(mapPostgresType('tstzrange', false)).toEqual({ kind: 'primitive', value: 'string' });
     });
 
     test('should map geometric types to unknown (not yet supported)', () => {

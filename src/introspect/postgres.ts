@@ -14,6 +14,7 @@ type RawColumn = {
   udt_name: string;
   udt_schema: string;
   is_nullable: string;
+  is_identity: string;
   column_default: string | null;
   column_comment: string | null;
 };
@@ -42,16 +43,17 @@ export async function introspectDatabase(
   db: Kysely<any>,
   options: IntrospectionOptions,
 ): Promise<DatabaseMetadata> {
-  const [domains, partitions, baseTables, materializedViews, enums] = await Promise.all([
+  const [domains, partitions, baseTables, regularViews, materializedViews, enums] = await Promise.all([
     introspectDomains(db),
     introspectPartitions(db),
     introspectTables(db, options.schemas),
+    introspectViews(db, options.schemas),
     introspectMaterializedViews(db, options.schemas),
     introspectEnums(db, options.schemas),
   ]);
 
   // Resolve domain types to their root types and mark partitions
-  const tables = [...baseTables, ...materializedViews].map((table) => {
+  const tables = [...baseTables, ...regularViews, ...materializedViews].map((table) => {
     const isPartition = partitions.some(
       (partition) => partition.schema === table.schema && partition.name === table.name
     );
@@ -82,6 +84,7 @@ async function introspectTables(db: Kysely<any>, schemas: string[]): Promise<Tab
       c.udt_name,
       c.udt_schema,
       c.is_nullable,
+      c.is_identity,
       c.column_default,
       pg_catalog.col_description(
         (c.table_schema||'.'||c.table_name)::regclass::oid,
@@ -124,6 +127,78 @@ async function introspectTables(db: Kysely<any>, schemas: string[]): Promise<Tab
         dataTypeSchema: row.udt_schema,
         isNullable: row.is_nullable === 'YES',
         isAutoIncrement: isAutoIncrementColumn(row),
+        hasDefaultValue: row.column_default !== null,
+      };
+
+      if (isArray) {
+        columnMetadata.isArray = true;
+      }
+
+      if (row.column_comment) {
+        columnMetadata.comment = row.column_comment;
+      }
+
+      table.columns.push(columnMetadata);
+    }
+  }
+
+  return Array.from(tableMap.values());
+}
+
+async function introspectViews(db: Kysely<any>, schemas: string[]): Promise<TableMetadata[]> {
+  const rawColumns = await sql<RawColumn>`
+    SELECT
+      c.table_schema,
+      c.table_name,
+      c.column_name,
+      c.data_type,
+      c.udt_name,
+      c.udt_schema,
+      c.is_nullable,
+      c.is_identity,
+      c.column_default,
+      pg_catalog.col_description(
+        (c.table_schema||'.'||c.table_name)::regclass::oid,
+        c.ordinal_position
+      ) as column_comment
+    FROM information_schema.columns c
+    INNER JOIN information_schema.tables t
+      ON c.table_schema = t.table_schema
+      AND c.table_name = t.table_name
+    WHERE t.table_type = 'VIEW'
+      AND c.table_schema = ANY(${schemas})
+    ORDER BY c.table_schema, c.table_name, c.ordinal_position
+  `.execute(db);
+
+  const tableMap = new Map<string, TableMetadata>();
+
+  for (const row of rawColumns.rows) {
+    const tableKey = `${row.table_schema}.${row.table_name}`;
+
+    if (!tableMap.has(tableKey)) {
+      tableMap.set(tableKey, {
+        schema: row.table_schema,
+        name: row.table_name,
+        columns: [],
+        isView: true,
+      });
+    }
+
+    const table = tableMap.get(tableKey);
+    if (table) {
+      const isArray = row.data_type === 'ARRAY';
+      let dataType = row.udt_name;
+
+      if (isArray && dataType.startsWith('_')) {
+        dataType = dataType.slice(1);
+      }
+
+      const columnMetadata: ColumnMetadata = {
+        name: row.column_name,
+        dataType,
+        dataTypeSchema: row.udt_schema,
+        isNullable: row.is_nullable === 'YES',
+        isAutoIncrement: false,
         hasDefaultValue: row.column_default !== null,
       };
 
@@ -295,11 +370,14 @@ async function introspectEnums(db: Kysely<any>, schemas: string[]): Promise<Enum
 }
 
 function isAutoIncrementColumn(column: RawColumn): boolean {
+  if (column.is_identity === 'YES') {
+    return true;
+  }
+
   if (!column.column_default) {
     return false;
   }
 
-  // Check for serial columns (nextval)
   return column.column_default.includes('nextval');
 }
 
