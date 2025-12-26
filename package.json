@@ -1,6 +1,6 @@
 {
   "name": "kysely-gen",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Modern PostgreSQL type generator for Kysely - Built with Bun and TDD",
   "type": "module",
   "license": "MIT",
