@@ -12,7 +12,7 @@ kysely-gen is a **PostgreSQL → TypeScript type generator** for Kysely, built w
 
 ### Testing (Primary Workflow)
 ```bash
-bun test              # Run all tests (54 tests)
+bun test              # Run all tests
 bun test --watch      # TDD mode - run continuously
 bun test <file>       # Run specific test file
 ```
@@ -168,6 +168,23 @@ This makes auto-increment and default-value columns optional during insert opera
 - `--camel-case` - Convert column/table names to camelCase
 - `--include-pattern <pattern>` - Only include matching tables (glob)
 - `--exclude-pattern <pattern>` - Exclude matching tables (glob)
+
+## Publishing
+
+Use the GitHub Actions workflow to publish new versions:
+
+1. Go to **Actions → Publish to npm → Run workflow**
+2. Enter version number (e.g., `0.3.0`)
+3. The workflow will:
+   - Run tests
+   - Build package
+   - Bump version in package.json
+   - Create git tag
+   - Push to main
+   - Publish to npm
+   - Create GitHub release with auto-generated notes
+
+Do NOT publish manually. Always use the workflow.
 
 ## Notes
 
