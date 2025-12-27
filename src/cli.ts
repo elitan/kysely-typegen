@@ -23,6 +23,7 @@ program
   .option('--camel-case', 'Convert column and table names to camelCase (use with Kysely CamelCasePlugin)')
   .option('--include-pattern <pattern>', 'Only include tables matching glob pattern (schema.table format)', collect, [])
   .option('--exclude-pattern <pattern>', 'Exclude tables matching glob pattern (schema.table format)', collect, [])
+  .option('--print', 'Output to stdout instead of writing to file')
   .action(async (options) => {
     try {
       await generate(options);
@@ -51,7 +52,13 @@ async function generate(options: {
   camelCase?: boolean;
   includePattern: string[];
   excludePattern: string[];
+  print?: boolean;
 }) {
+  const printMode = options.print === true;
+  const log = printMode
+    ? (...args: unknown[]) => console.error(...args)
+    : (...args: unknown[]) => console.log(...args);
+
   const databaseUrl = options.url || process.env.DATABASE_URL;
   if (!databaseUrl) {
     console.error(chalk.red('Error: DATABASE_URL environment variable is required'));
@@ -85,16 +92,18 @@ async function generate(options: {
   const defaultSchema = dialectName === 'sqlite' ? 'main' : 'public';
   const schemas = options.schema.length > 0 ? options.schema : [defaultSchema];
 
-  console.log('');
-  console.log(chalk.bold('kysely-gen') + chalk.dim(' v0.1.0'));
-  console.log('');
-  console.log(chalk.dim('Dialect:'), dialectName);
-  console.log(chalk.dim('Connection:'), maskPassword(databaseUrl));
-  console.log(chalk.dim('Schemas:'), schemas.join(', '));
-  console.log(chalk.dim('Output:'), resolve(outputPath));
-  console.log('');
+  log('');
+  log(chalk.bold('kysely-gen') + chalk.dim(' v0.1.0'));
+  log('');
+  log(chalk.dim('Dialect:'), dialectName);
+  log(chalk.dim('Connection:'), maskPassword(databaseUrl));
+  log(chalk.dim('Schemas:'), schemas.join(', '));
+  if (!printMode) {
+    log(chalk.dim('Output:'), resolve(outputPath));
+  }
+  log('');
 
-  const spinner = ora('Connecting to database...').start();
+  const spinner = ora({ text: 'Connecting to database...', stream: printMode ? process.stderr : process.stdout }).start();
 
   let db: Kysely<any>;
   try {
@@ -114,9 +123,9 @@ async function generate(options: {
 
   if (tableCount === 0 && enumCount === 0) {
     spinner.warn('No tables or enums found');
-    console.log('');
-    console.log(chalk.yellow('⚠ Warning: No tables or enums found in the specified schemas.'));
-    console.log(chalk.dim('  Make sure the schema names are correct and contain tables.'));
+    log('');
+    log(chalk.yellow('Warning: No tables or enums found in the specified schemas.'));
+    log(chalk.dim('  Make sure the schema names are correct and contain tables.'));
     await db.destroy();
     return;
   }
@@ -133,26 +142,32 @@ async function generate(options: {
   });
   const code = serialize(astProgram);
 
-  // Write to file
-  const absolutePath = resolve(outputPath);
-  await writeFile(absolutePath, code, 'utf-8');
-  spinner.succeed(`Types written to ${chalk.cyan(absolutePath)}`);
+  if (printMode) {
+    spinner.succeed('Types generated');
+    process.stdout.write(code);
+  } else {
+    const absolutePath = resolve(outputPath);
+    await writeFile(absolutePath, code, 'utf-8');
+    spinner.succeed(`Types written to ${chalk.cyan(absolutePath)}`);
+  }
 
   // Show warnings
   if (warnings.length > 0) {
-    console.log('');
-    console.log(chalk.yellow('Warnings:'));
+    log('');
+    log(chalk.yellow('Warnings:'));
     for (const w of warnings) {
-      console.log(chalk.dim(`  Unknown type '${w.pgType}' mapped to 'unknown'`));
+      log(chalk.dim(`  Unknown type '${w.pgType}' mapped to 'unknown'`));
     }
   }
 
   // Clean up
   await db.destroy();
 
-  console.log('');
-  console.log(chalk.green('Done!'));
-  console.log('');
+  if (!printMode) {
+    log('');
+    log(chalk.green('Done!'));
+    log('');
+  }
 }
 
 function maskPassword(connectionString: string): string {

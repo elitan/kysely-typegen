@@ -168,6 +168,7 @@ This makes auto-increment and default-value columns optional during insert opera
 - `--camel-case` - Convert column/table names to camelCase
 - `--include-pattern <pattern>` - Only include matching tables (glob)
 - `--exclude-pattern <pattern>` - Exclude matching tables (glob)
+- `--print` - Output to stdout instead of file (ignores `--out`)
 
 ## Publishing
 
