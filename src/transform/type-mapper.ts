@@ -154,7 +154,7 @@ export function mapPostgresType(
 
     case 'json':
     case 'jsonb':
-      baseType = { kind: 'primitive', value: 'unknown' };
+      baseType = { kind: 'reference', name: 'JsonValue' };
       break;
 
     case 'bytea':

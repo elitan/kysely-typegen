@@ -31,6 +31,55 @@ export function transformDatabase(metadata: DatabaseMetadata, options?: Transfor
     exported: true,
   });
 
+  declarations.push({
+    kind: 'typeAlias',
+    name: 'JsonPrimitive',
+    type: {
+      kind: 'union',
+      types: [
+        { kind: 'primitive', value: 'string' },
+        { kind: 'primitive', value: 'number' },
+        { kind: 'primitive', value: 'boolean' },
+        { kind: 'primitive', value: 'null' },
+      ],
+    },
+    exported: true,
+  });
+
+  declarations.push({
+    kind: 'typeAlias',
+    name: 'JsonArray',
+    type: {
+      kind: 'array',
+      elementType: { kind: 'reference', name: 'JsonValue' },
+    },
+    exported: true,
+  });
+
+  declarations.push({
+    kind: 'typeAlias',
+    name: 'JsonObject',
+    type: {
+      kind: 'raw',
+      value: '{ [key: string]: JsonValue }',
+    },
+    exported: true,
+  });
+
+  declarations.push({
+    kind: 'typeAlias',
+    name: 'JsonValue',
+    type: {
+      kind: 'union',
+      types: [
+        { kind: 'reference', name: 'JsonPrimitive' },
+        { kind: 'reference', name: 'JsonObject' },
+        { kind: 'reference', name: 'JsonArray' },
+      ],
+    },
+    exported: true,
+  });
+
   for (const enumMetadata of metadata.enums) {
     declarations.push(transformEnum(enumMetadata));
   }

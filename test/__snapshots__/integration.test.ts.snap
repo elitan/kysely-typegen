@@ -7,6 +7,14 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export type JsonPrimitive = string | number | boolean | null;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = { [key: string]: JsonValue };
+
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+
 export type StatusEnum = 'pending' | 'approved' | 'rejected';
 
 export interface Comment {
@@ -55,7 +63,7 @@ export interface User {
   created_at: ColumnType<Date, Date | string, Date | string>;
   updated_at: ColumnType<Date, Date | string, Date | string> | null;
   is_active: boolean;
-  metadata: unknown | null;
+  metadata: JsonValue | null;
   tags: string[] | null;
   scores: number[] | null;
 }

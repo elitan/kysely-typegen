@@ -39,9 +39,9 @@ describe('Transform', () => {
       }
     });
 
-    test('should map jsonb to unknown', () => {
-      expect(mapPostgresType('jsonb', false)).toEqual({ kind: 'primitive', value: 'unknown' });
-      expect(mapPostgresType('json', false)).toEqual({ kind: 'primitive', value: 'unknown' });
+    test('should map json/jsonb to JsonValue reference', () => {
+      expect(mapPostgresType('jsonb', false)).toEqual({ kind: 'reference', name: 'JsonValue' });
+      expect(mapPostgresType('json', false)).toEqual({ kind: 'reference', name: 'JsonValue' });
     });
 
     test('should wrap nullable types in union with null', () => {
@@ -89,8 +89,8 @@ describe('Transform', () => {
 
       const { program } = transformDatabase(metadata);
 
-      // Should have import, Generated type, and 2 interfaces (User + DB)
-      expect(program.declarations).toHaveLength(4);
+      // Should have import, Generated type, 4 JSON types, and 2 interfaces (User + DB)
+      expect(program.declarations).toHaveLength(8);
 
       // Check import
       const importDecl = program.declarations[0];
@@ -422,11 +422,11 @@ describe('Transform', () => {
       }
     });
 
-    test('should map jsonb[] to unknown[]', () => {
+    test('should map jsonb[] to JsonValue[]', () => {
       const result = mapPostgresType('jsonb[]', false);
       expect(result.kind).toBe('array');
       if (result.kind === 'array') {
-        expect(result.elementType).toEqual({ kind: 'primitive', value: 'unknown' });
+        expect(result.elementType).toEqual({ kind: 'reference', name: 'JsonValue' });
       }
     });
 
@@ -676,7 +676,7 @@ describe('Transform', () => {
         expect(byteaCol?.type.kind).toBe('union');
 
         const jsonCol = complexInterface.properties.find((p) => p.name === 'json_col');
-        expect(jsonCol?.type).toEqual({ kind: 'primitive', value: 'unknown' });
+        expect(jsonCol?.type).toEqual({ kind: 'reference', name: 'JsonValue' });
 
         const decimalCol = complexInterface.properties.find((p) => p.name === 'decimal_col');
         expect(decimalCol?.type.kind).toBe('generic');
@@ -1004,6 +1004,128 @@ describe('Transform', () => {
         expect(createdProp?.type.kind).toBe('generic');
         if (createdProp?.type.kind === 'generic') {
           expect(createdProp.type.name).toBe('ColumnType');
+        }
+      }
+    });
+  });
+
+  describe('json types', () => {
+    test('should include JsonValue type definitions when json columns exist', () => {
+      const metadata: DatabaseMetadata = {
+        tables: [
+          {
+            schema: 'public',
+            name: 'data',
+            columns: [
+              {
+                name: 'id',
+                dataType: 'int4',
+                isNullable: false,
+                isAutoIncrement: true,
+                hasDefaultValue: true,
+              },
+              {
+                name: 'payload',
+                dataType: 'jsonb',
+                isNullable: false,
+                isAutoIncrement: false,
+                hasDefaultValue: false,
+              },
+            ],
+          },
+        ],
+        enums: [],
+      };
+
+      const { program } = transformDatabase(metadata);
+
+      const jsonPrimitive = program.declarations.find(
+        (d) => d.kind === 'typeAlias' && d.name === 'JsonPrimitive'
+      );
+      expect(jsonPrimitive).toBeDefined();
+      if (jsonPrimitive?.kind === 'typeAlias') {
+        expect(jsonPrimitive.exported).toBe(true);
+      }
+
+      const jsonArray = program.declarations.find(
+        (d) => d.kind === 'typeAlias' && d.name === 'JsonArray'
+      );
+      expect(jsonArray).toBeDefined();
+
+      const jsonObject = program.declarations.find(
+        (d) => d.kind === 'typeAlias' && d.name === 'JsonObject'
+      );
+      expect(jsonObject).toBeDefined();
+
+      const jsonValue = program.declarations.find(
+        (d) => d.kind === 'typeAlias' && d.name === 'JsonValue'
+      );
+      expect(jsonValue).toBeDefined();
+    });
+
+    test('should map json column to JsonValue reference', () => {
+      const metadata: DatabaseMetadata = {
+        tables: [
+          {
+            schema: 'public',
+            name: 'configs',
+            columns: [
+              {
+                name: 'settings',
+                dataType: 'json',
+                isNullable: false,
+                isAutoIncrement: false,
+                hasDefaultValue: false,
+              },
+            ],
+          },
+        ],
+        enums: [],
+      };
+
+      const { program } = transformDatabase(metadata);
+
+      const configInterface = program.declarations.find(
+        (d) => d.kind === 'interface' && d.name === 'Config'
+      );
+      expect(configInterface).toBeDefined();
+      if (configInterface?.kind === 'interface') {
+        const settingsProp = configInterface.properties.find((p) => p.name === 'settings');
+        expect(settingsProp?.type).toEqual({ kind: 'reference', name: 'JsonValue' });
+      }
+    });
+
+    test('should handle nullable json columns', () => {
+      const metadata: DatabaseMetadata = {
+        tables: [
+          {
+            schema: 'public',
+            name: 'events',
+            columns: [
+              {
+                name: 'metadata',
+                dataType: 'jsonb',
+                isNullable: true,
+                isAutoIncrement: false,
+                hasDefaultValue: false,
+              },
+            ],
+          },
+        ],
+        enums: [],
+      };
+
+      const { program } = transformDatabase(metadata);
+
+      const eventInterface = program.declarations.find(
+        (d) => d.kind === 'interface' && d.name === 'Event'
+      );
+      if (eventInterface?.kind === 'interface') {
+        const metadataProp = eventInterface.properties.find((p) => p.name === 'metadata');
+        expect(metadataProp?.type.kind).toBe('union');
+        if (metadataProp?.type.kind === 'union') {
+          expect(metadataProp.type.types[0]).toEqual({ kind: 'reference', name: 'JsonValue' });
+          expect(metadataProp.type.types[1]).toEqual({ kind: 'primitive', value: 'null' });
         }
       }
     });
