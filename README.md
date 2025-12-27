@@ -99,7 +99,16 @@ export interface DB {
 
 ## Type Mappings
 
+Types are generated to match the default behavior of each database driver. If you customize your driver's type parsers, the generated types may not match.
+
 ### PostgreSQL
+
+Generated types match `node-postgres` (pg) defaults:
+
+- **Dates** (`timestamp`, `date`): Driver returns `Date` objects. Inserts accept `Date | string`.
+- **Bigint** (`int8`): Driver returns `string` (JS Number can't represent full int8 range). Inserts accept `string | number | bigint`.
+- **Numeric** (`numeric`, `decimal`): Driver returns `string` for precision. Inserts accept `string | number`.
+
 | PostgreSQL | TypeScript |
 |------------|------------|
 | `int2`, `int4`, `integer` | `number` |
@@ -110,6 +119,13 @@ export interface DB {
 | `text[]`, `int4[]` | `string[]`, `number[]` |
 
 ### MySQL
+
+Generated types match `mysql2` defaults:
+
+- **Dates** (`datetime`, `timestamp`): Driver returns `Date` objects. Inserts accept `Date | string`.
+- **Bigint**: Driver returns `string`. Inserts accept `string | number | bigint`.
+- **Decimal**: Driver returns `string` for precision. Inserts accept `string | number`.
+
 | MySQL | TypeScript |
 |-------|------------|
 | `tinyint(1)` | `boolean` |
@@ -122,6 +138,9 @@ export interface DB {
 | `enum('a','b')` | `'a' \| 'b'` |
 
 ### SQLite
+
+Generated types match `better-sqlite3` defaults. SQLite has simpler type affinity - no `ColumnType` wrappers needed since values are returned as-is.
+
 | SQLite | TypeScript |
 |--------|------------|
 | `INTEGER`, `INT`, `BIGINT` | `number` |
