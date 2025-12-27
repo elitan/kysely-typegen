@@ -1,6 +1,6 @@
 {
   "name": "kysely-gen",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Database type generator for Kysely - Supports PostgreSQL, MySQL, and SQLite",
   "type": "module",
   "license": "MIT",
