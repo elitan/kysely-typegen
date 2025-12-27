@@ -2,7 +2,7 @@
 
 Generate TypeScript types from your database for [Kysely](https://kysely.dev/).
 
-Supports PostgreSQL and MySQL.
+Supports PostgreSQL, MySQL, and SQLite.
 
 ## Install
 
@@ -12,6 +12,9 @@ npm install kysely-gen kysely pg
 
 # MySQL
 npm install kysely-gen kysely mysql2
+
+# SQLite
+npm install kysely-gen kysely better-sqlite3
 ```
 
 ## Usage
@@ -23,6 +26,9 @@ DATABASE_URL=postgres://user:pass@localhost:5432/db npx kysely-gen
 # MySQL (auto-detected from URL)
 DATABASE_URL=mysql://user:pass@localhost:3306/db npx kysely-gen
 
+# SQLite (auto-detected from file extension)
+npx kysely-gen --url ./database.db
+
 # Explicit dialect
 npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 ```
@@ -31,7 +37,7 @@ npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 
 | Option | Description |
 |--------|-------------|
-| `--dialect <name>` | Database dialect: `postgres` or `mysql` (auto-detected from URL) |
+| `--dialect <name>` | Database dialect: `postgres`, `mysql`, or `sqlite` (auto-detected) |
 | `--out <path>` | Output file (default: `./db.d.ts`) |
 | `--schema <name>` | Schema to introspect (repeatable) |
 | `--url <string>` | Database URL (overrides `DATABASE_URL`) |
@@ -85,6 +91,12 @@ export interface DB {
 - Geometry types (Point, LineString, Polygon)
 - `tinyint(1)` mapped to boolean
 
+### SQLite
+- `Generated<T>` for INTEGER PRIMARY KEY (auto-increment)
+- Views
+- JSON columns mapped to `JsonValue`
+- Simple type affinity mapping (no ColumnType wrappers)
+
 ## Type Mappings
 
 ### PostgreSQL
@@ -108,6 +120,17 @@ export interface DB {
 | `json` | `JsonValue` |
 | `point` | `Point` |
 | `enum('a','b')` | `'a' \| 'b'` |
+
+### SQLite
+| SQLite | TypeScript |
+|--------|------------|
+| `INTEGER`, `INT`, `BIGINT` | `number` |
+| `REAL`, `DOUBLE`, `FLOAT` | `number` |
+| `TEXT`, `VARCHAR`, `CHAR` | `string` |
+| `BLOB` | `Buffer` |
+| `DATE`, `DATETIME`, `TIMESTAMP` | `string` |
+| `JSON` | `JsonValue` |
+| `BOOLEAN` | `number` (0/1) |
 
 ## License
 

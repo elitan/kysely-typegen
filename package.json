@@ -1,7 +1,7 @@
 {
   "name": "kysely-gen",
   "version": "0.3.0",
-  "description": "Database type generator for Kysely - Supports PostgreSQL and MySQL",
+  "description": "Database type generator for Kysely - Supports PostgreSQL, MySQL, and SQLite",
   "type": "module",
   "license": "MIT",
   "author": "kysely-gen contributors",
@@ -18,6 +18,7 @@
     "postgres",
     "postgresql",
     "mysql",
+    "sqlite",
     "typescript",
     "codegen",
     "typegen",
@@ -61,22 +62,28 @@
     "pg": "^8.16.3"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.1.12",
     "@types/micromatch": "^4.0.10",
     "@types/pg": "^8.11.10",
+    "better-sqlite3": "^12.5.0",
     "mysql2": "^3.11.0",
     "typescript": "^5.6.3"
   },
   "peerDependencies": {
     "kysely": ">=0.27.0 <1.0.0",
     "pg": ">=8.8.0 <9.0.0",
-    "mysql2": ">=3.0.0 <4.0.0"
+    "mysql2": ">=3.0.0 <4.0.0",
+    "better-sqlite3": ">=9.0.0 <13.0.0"
   },
   "peerDependenciesMeta": {
     "pg": {
       "optional": true
     },
     "mysql2": {
+      "optional": true
+    },
+    "better-sqlite3": {
       "optional": true
     }
   }

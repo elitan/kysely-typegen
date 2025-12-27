@@ -19,7 +19,7 @@ program
   .option('-o, --out <path>', 'Output file path', './db.d.ts')
   .option('-s, --schema <name>', 'Schema to introspect (can be specified multiple times)', collect, [])
   .option('--url <connection-string>', 'Database connection string (overrides DATABASE_URL env)')
-  .option('-d, --dialect <name>', 'Database dialect (postgres, mysql). Auto-detected from URL if not specified')
+  .option('-d, --dialect <name>', 'Database dialect (postgres, mysql, sqlite). Auto-detected from URL if not specified')
   .option('--camel-case', 'Convert column and table names to camelCase (use with Kysely CamelCasePlugin)')
   .option('--include-pattern <pattern>', 'Only include tables matching glob pattern (schema.table format)', collect, [])
   .option('--exclude-pattern <pattern>', 'Exclude tables matching glob pattern (schema.table format)', collect, [])
@@ -66,8 +66,8 @@ async function generate(options: {
 
   let dialectName: DialectName;
   if (options.dialect) {
-    if (options.dialect !== 'postgres' && options.dialect !== 'mysql') {
-      console.error(chalk.red(`Error: Unknown dialect '${options.dialect}'. Supported: postgres, mysql`));
+    if (options.dialect !== 'postgres' && options.dialect !== 'mysql' && options.dialect !== 'sqlite') {
+      console.error(chalk.red(`Error: Unknown dialect '${options.dialect}'. Supported: postgres, mysql, sqlite`));
       process.exit(1);
     }
     dialectName = options.dialect;
@@ -82,7 +82,8 @@ async function generate(options: {
 
   const dialect = getDialect(dialectName);
   const outputPath = options.out;
-  const schemas = options.schema.length > 0 ? options.schema : ['public'];
+  const defaultSchema = dialectName === 'sqlite' ? 'main' : 'public';
+  const schemas = options.schema.length > 0 ? options.schema : [defaultSchema];
 
   console.log('');
   console.log(chalk.bold('kysely-gen') + chalk.dim(' v0.1.0'));
@@ -154,15 +155,15 @@ async function generate(options: {
   console.log('');
 }
 
-function maskPassword(url: string): string {
+function maskPassword(connectionString: string): string {
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(connectionString);
     if (parsed.password) {
       parsed.password = '***';
     }
     return parsed.toString();
   } catch {
-    return url;
+    return connectionString;
   }
 }
 

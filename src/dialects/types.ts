@@ -2,7 +2,7 @@ import type { Kysely, Dialect as KyselyDialect } from 'kysely';
 import type { TypeNode } from '@/ast/nodes';
 import type { DatabaseMetadata } from '@/introspect/types';
 
-export type DialectName = 'postgres' | 'mysql';
+export type DialectName = 'postgres' | 'mysql' | 'sqlite';
 
 export type IntrospectOptions = {
   schemas: string[];
