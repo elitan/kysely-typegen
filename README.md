@@ -2,7 +2,7 @@
 
 Generate TypeScript types from your database for [Kysely](https://kysely.dev/).
 
-Supports PostgreSQL, MySQL, and SQLite.
+Supports PostgreSQL, MySQL, SQLite, and MSSQL.
 
 ## Install
 
@@ -15,6 +15,9 @@ npm install kysely-gen kysely mysql2
 
 # SQLite
 npm install kysely-gen kysely better-sqlite3
+
+# MSSQL
+npm install kysely-gen kysely tedious tarn
 ```
 
 ## Usage
@@ -29,6 +32,10 @@ DATABASE_URL=mysql://user:pass@localhost:3306/db npx kysely-gen
 # SQLite (auto-detected from file extension)
 npx kysely-gen --url ./database.db
 
+# MSSQL (auto-detected from URL or connection string)
+npx kysely-gen --url "mssql://user:pass@localhost:1433/db"
+npx kysely-gen --url "Server=localhost;Database=db;User Id=user;Password=pass"
+
 # Explicit dialect
 npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 ```
@@ -37,7 +44,7 @@ npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 
 | Option | Description |
 |--------|-------------|
-| `--dialect <name>` | Database dialect: `postgres`, `mysql`, or `sqlite` (auto-detected) |
+| `--dialect <name>` | Database dialect: `postgres`, `mysql`, `sqlite`, or `mssql` (auto-detected) |
 | `--out <path>` | Output file (default: `./db.d.ts`) |
 | `--schema <name>` | Schema to introspect (repeatable) |
 | `--url <string>` | Database URL (overrides `DATABASE_URL`) |
@@ -97,6 +104,13 @@ export interface DB {
 - JSON columns mapped to `JsonValue`
 - Simple type affinity mapping (no ColumnType wrappers)
 
+### MSSQL
+- `Generated<T>` for identity and computed columns
+- Views
+- Multi-schema support (default: `dbo`)
+- All MSSQL types: `uniqueidentifier`, `datetime2`, `datetimeoffset`, `money`, `xml`, `varbinary`, etc.
+- Both URL (`mssql://`) and ADO.NET connection string formats
+
 ## Type Mappings
 
 Types are generated to match the default behavior of each database driver. If you customize your driver's type parsers, the generated types may not match.
@@ -150,6 +164,25 @@ Generated types match `better-sqlite3` defaults. SQLite has simpler type affinit
 | `DATE`, `DATETIME`, `TIMESTAMP` | `string` |
 | `JSON` | `JsonValue` |
 | `BOOLEAN` | `number` (0/1) |
+
+### MSSQL
+
+Generated types match `tedious` defaults. The driver handles type conversions, so simple types are used without `ColumnType` wrappers.
+
+| MSSQL | TypeScript |
+|-------|------------|
+| `int`, `smallint`, `tinyint`, `bigint` | `number` |
+| `decimal`, `numeric`, `money`, `smallmoney` | `number` |
+| `float`, `real` | `number` |
+| `datetime`, `datetime2`, `date`, `time` | `Date` |
+| `datetimeoffset`, `smalldatetime` | `Date` |
+| `char`, `varchar`, `nchar`, `nvarchar` | `string` |
+| `text`, `ntext` | `string` |
+| `uniqueidentifier` | `string` |
+| `xml` | `string` |
+| `bit` | `boolean` |
+| `binary`, `varbinary`, `image` | `Buffer` |
+| `sql_variant` | `unknown` |
 
 ## License
 

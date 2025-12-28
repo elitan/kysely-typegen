@@ -80,8 +80,8 @@ async function generate(options: {
 
   let dialectName: DialectName;
   if (options.dialect) {
-    if (options.dialect !== 'postgres' && options.dialect !== 'mysql' && options.dialect !== 'sqlite') {
-      console.error(chalk.red(`Error: Unknown dialect '${options.dialect}'. Supported: postgres, mysql, sqlite`));
+    if (options.dialect !== 'postgres' && options.dialect !== 'mysql' && options.dialect !== 'sqlite' && options.dialect !== 'mssql') {
+      console.error(chalk.red(`Error: Unknown dialect '${options.dialect}'. Supported: postgres, mysql, sqlite, mssql`));
       process.exit(1);
     }
     dialectName = options.dialect;
@@ -96,7 +96,7 @@ async function generate(options: {
 
   const dialect = getDialect(dialectName);
   const outputPath = options.out;
-  const defaultSchema = dialectName === 'sqlite' ? 'main' : 'public';
+  const defaultSchema = dialectName === 'sqlite' ? 'main' : dialectName === 'mssql' ? 'dbo' : 'public';
   const schemas = options.schema.length > 0 ? options.schema : [defaultSchema];
 
   log('');
