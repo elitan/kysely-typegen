@@ -3,11 +3,13 @@ import type { TableMetadata } from '@/introspect/types';
 import type { TransformOptions } from '@/transform/types';
 
 export function filterTables(tables: TableMetadata[], options?: TransformOptions): TableMetadata[] {
+  const nonPartitionTables = tables.filter((t) => !t.isPartition);
+
   if (!options || (!options.includePattern && !options.excludePattern)) {
-    return tables;
+    return nonPartitionTables;
   }
 
-  return tables.filter((table) => {
+  return nonPartitionTables.filter((table) => {
     const tablePattern = `${table.schema}.${table.name}`;
 
     if (options.excludePattern && options.excludePattern.length > 0) {
