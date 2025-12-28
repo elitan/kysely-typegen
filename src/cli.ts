@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { Kysely } from 'kysely';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { serialize } from '@/ast/serialize';
 import { transformDatabase } from '@/transform';
@@ -24,6 +24,7 @@ program
   .option('--include-pattern <pattern>', 'Only include tables matching glob pattern (schema.table format)', collect, [])
   .option('--exclude-pattern <pattern>', 'Exclude tables matching glob pattern (schema.table format)', collect, [])
   .option('--print', 'Output to stdout instead of writing to file')
+  .option('--verify', 'Verify types match existing file (exit 1 if different)')
   .action(async (options) => {
     try {
       await generate(options);
@@ -53,11 +54,17 @@ async function generate(options: {
   includePattern: string[];
   excludePattern: string[];
   print?: boolean;
+  verify?: boolean;
 }) {
   const printMode = options.print === true;
   const log = printMode
     ? (...args: unknown[]) => console.error(...args)
     : (...args: unknown[]) => console.log(...args);
+
+  if (options.verify && options.print) {
+    console.error(chalk.red('Error: Cannot use --verify with --print'));
+    process.exit(1);
+  }
 
   const databaseUrl = options.url || process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -141,6 +148,30 @@ async function generate(options: {
     excludePattern: options.excludePattern.length > 0 ? options.excludePattern : undefined,
   });
   const code = serialize(astProgram);
+
+  if (options.verify) {
+    const absolutePath = resolve(outputPath);
+    const existing = await readFile(absolutePath, 'utf-8').catch(() => null);
+
+    if (existing === null) {
+      spinner.fail(`File not found: ${chalk.cyan(absolutePath)}`);
+      await db.destroy();
+      process.exit(1);
+    }
+
+    if (existing === code) {
+      spinner.succeed('Types are up-to-date');
+      await db.destroy();
+      process.exit(0);
+    }
+
+    spinner.fail('Types are out of date');
+    log('');
+    log(chalk.yellow('Generated types differ from existing file.'));
+    log(chalk.dim('Run kysely-gen to update.'));
+    await db.destroy();
+    process.exit(1);
+  }
 
   if (printMode) {
     spinner.succeed('Types generated');

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { spawn } from 'bun';
 import { resolve } from 'node:path';
-import { unlink } from 'node:fs/promises';
+import { unlink, writeFile } from 'node:fs/promises';
 
 const TEST_DATABASE_URL = 'postgres://test_user:test_password@localhost:5433/test_db';
 const CLI_PATH = resolve(import.meta.dir, '../src/cli.ts');
@@ -75,6 +75,96 @@ describe('CLI', () => {
 
       const fileExists = await Bun.file(testOutputPath).exists();
       expect(fileExists).toBe(false);
+    });
+  });
+
+  describe('--verify flag', () => {
+    test('should exit 0 when types match', async () => {
+      const testOutputPath = '/tmp/test-verify-match.d.ts';
+
+      const genProc = spawn({
+        cmd: ['bun', CLI_PATH, '--print'],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+      const generatedCode = await new Response(genProc.stdout).text();
+      await genProc.exited;
+
+      await writeFile(testOutputPath, generatedCode);
+
+      const verifyProc = spawn({
+        cmd: ['bun', CLI_PATH, '--verify', '--out', testOutputPath],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const exitCode = await verifyProc.exited;
+      const stdout = await new Response(verifyProc.stdout).text();
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('Types are up-to-date');
+
+      await unlink(testOutputPath);
+    });
+
+    test('should exit 1 when types differ', async () => {
+      const testOutputPath = '/tmp/test-verify-differ.d.ts';
+      await writeFile(testOutputPath, 'outdated content');
+
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--verify', '--out', testOutputPath],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const exitCode = await proc.exited;
+      const stdout = await new Response(proc.stdout).text();
+
+      expect(exitCode).toBe(1);
+      expect(stdout).toContain('Types are out of date');
+
+      await unlink(testOutputPath);
+    });
+
+    test('should exit 1 when file does not exist', async () => {
+      const testOutputPath = '/tmp/test-verify-nonexistent.d.ts';
+
+      try {
+        await unlink(testOutputPath);
+      } catch {
+        // file doesn't exist, that's fine
+      }
+
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--verify', '--out', testOutputPath],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const exitCode = await proc.exited;
+      const stdout = await new Response(proc.stdout).text();
+
+      expect(exitCode).toBe(1);
+      expect(stdout).toContain('File not found');
+    });
+
+    test('should error when used with --print', async () => {
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--verify', '--print'],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const exitCode = await proc.exited;
+      const stderr = await new Response(proc.stderr).text();
+
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('Cannot use --verify with --print');
     });
   });
 });
