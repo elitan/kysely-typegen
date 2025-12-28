@@ -29,10 +29,16 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
   if (isArray || dataType.endsWith('[]')) {
     const baseTypeName = dataType.endsWith('[]') ? dataType.slice(0, -2) : dataType;
     const elementType = mapPostgresType(baseTypeName, { isNullable: false, isArray: false, unknownTypes });
-    const arrayType: TypeNode = {
-      kind: 'array',
-      elementType,
-    };
+
+    const isSimple = elementType.kind === 'primitive' &&
+      ['boolean', 'number', 'string'].includes(elementType.value);
+
+    let arrayType: TypeNode;
+    if (isSimple) {
+      arrayType = { kind: 'array', elementType };
+    } else {
+      arrayType = { kind: 'generic', name: 'ArrayType', typeArguments: [elementType] };
+    }
 
     if (isNullable) {
       return {

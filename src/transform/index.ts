@@ -47,6 +47,30 @@ export function transformDatabase(metadata: DatabaseMetadata, options?: Transfor
 
   declarations.push({
     kind: 'typeAlias',
+    name: 'ArrayType<T>',
+    type: {
+      kind: 'raw',
+      value: `ArrayTypeImpl<T> extends (infer U)[]
+  ? U[]
+  : ArrayTypeImpl<T>`,
+    },
+    exported: true,
+  });
+
+  declarations.push({
+    kind: 'typeAlias',
+    name: 'ArrayTypeImpl<T>',
+    type: {
+      kind: 'raw',
+      value: `T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S[], I[], U[]>
+  : T[]`,
+    },
+    exported: true,
+  });
+
+  declarations.push({
+    kind: 'typeAlias',
     name: 'JsonPrimitive',
     type: {
       kind: 'union',

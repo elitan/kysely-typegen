@@ -89,8 +89,8 @@ describe('Transform', () => {
 
       const { program } = transformDatabase(metadata);
 
-      // Should have import, Generated type, 4 JSON types, IPostgresInterval, and 2 interfaces (User + DB)
-      expect(program.declarations).toHaveLength(9);
+      // Should have import, Generated type, ArrayType, ArrayTypeImpl, 4 JSON types, IPostgresInterval, and 2 interfaces (User + DB)
+      expect(program.declarations).toHaveLength(11);
 
       // Check import
       const importDecl = program.declarations[0];
@@ -430,21 +430,23 @@ describe('Transform', () => {
       }
     });
 
-    test('should map jsonb[] to JsonValue[]', () => {
+    test('should map jsonb[] to ArrayType<JsonValue>', () => {
       const result = mapPostgresType('jsonb[]', false);
-      expect(result.kind).toBe('array');
-      if (result.kind === 'array') {
-        expect(result.elementType).toEqual({ kind: 'reference', name: 'JsonValue' });
+      expect(result.kind).toBe('generic');
+      if (result.kind === 'generic') {
+        expect(result.name).toBe('ArrayType');
+        expect(result.typeArguments[0]).toEqual({ kind: 'reference', name: 'JsonValue' });
       }
     });
 
-    test('should handle array of bigints with ColumnType', () => {
+    test('should handle array of bigints with ArrayType<ColumnType>', () => {
       const result = mapPostgresType('int8[]', false);
-      expect(result.kind).toBe('array');
-      if (result.kind === 'array') {
-        expect(result.elementType.kind).toBe('generic');
-        if (result.elementType.kind === 'generic') {
-          expect(result.elementType.name).toBe('ColumnType');
+      expect(result.kind).toBe('generic');
+      if (result.kind === 'generic') {
+        expect(result.name).toBe('ArrayType');
+        expect(result.typeArguments[0]?.kind).toBe('generic');
+        if (result.typeArguments[0]?.kind === 'generic') {
+          expect(result.typeArguments[0].name).toBe('ColumnType');
         }
       }
     });
@@ -513,7 +515,10 @@ describe('Transform', () => {
         const pricesProp = productInterface.properties.find((p) => p.name === 'prices');
         expect(pricesProp?.type.kind).toBe('union');
         if (pricesProp?.type.kind === 'union') {
-          expect(pricesProp.type.types[0]?.kind).toBe('array');
+          expect(pricesProp.type.types[0]?.kind).toBe('generic');
+          if (pricesProp.type.types[0]?.kind === 'generic') {
+            expect(pricesProp.type.types[0].name).toBe('ArrayType');
+          }
         }
       }
     });
