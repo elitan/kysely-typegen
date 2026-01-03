@@ -72,7 +72,7 @@ describe('CamelCase Support', () => {
       expect(code).toContain('userId: Generated<number>');
       expect(code).toContain('firstName: string');
       expect(code).toContain('lastName: string');
-      expect(code).toContain('createdAt: Generated<ColumnType<Date, Date | string, Date | string>>');
+      expect(code).toContain('createdAt: Generated<Timestamp>');
     });
 
     test('should convert table names in DB interface to camelCase', () => {

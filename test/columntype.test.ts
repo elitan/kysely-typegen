@@ -4,8 +4,10 @@ import { mapPostgresType } from '@/transform';
 
 describe('ColumnType Support', () => {
   describe('Timestamp types', () => {
-    test('should generate ColumnType for timestamp', () => {
+    test('should generate Timestamp reference for timestamp', () => {
       const result = mapPostgresType('timestamp', false);
+      expect(result).toEqual({ kind: 'reference', name: 'Timestamp' });
+
       const serialized = serialize({
         declarations: [
           {
@@ -17,7 +19,7 @@ describe('ColumnType Support', () => {
         ],
       });
 
-      expect(serialized).toContain('ColumnType<Date, Date | string, Date | string>');
+      expect(serialized).toContain('ts: Timestamp');
     });
 
     test('should handle nullable timestamp correctly', () => {
@@ -33,13 +35,15 @@ describe('ColumnType Support', () => {
         ],
       });
 
-      expect(serialized).toContain('ColumnType<Date, Date | string, Date | string> | null');
+      expect(serialized).toContain('ts: Timestamp | null');
     });
   });
 
   describe('Bigint types', () => {
-    test('should generate ColumnType for int8', () => {
+    test('should generate Int8 reference for int8', () => {
       const result = mapPostgresType('int8', false);
+      expect(result).toEqual({ kind: 'reference', name: 'Int8' });
+
       const serialized = serialize({
         declarations: [
           {
@@ -51,14 +55,17 @@ describe('ColumnType Support', () => {
         ],
       });
 
-      expect(serialized).toContain('ColumnType<string, string | number | bigint, string | number | bigint>');
+      expect(serialized).toContain('bigint: Int8');
     });
   });
 
   describe('Numeric types', () => {
-    test('should generate ColumnType for numeric/decimal', () => {
+    test('should generate Numeric reference for numeric/decimal', () => {
       const numericResult = mapPostgresType('numeric', false);
       const decimalResult = mapPostgresType('decimal', false);
+
+      expect(numericResult).toEqual({ kind: 'reference', name: 'Numeric' });
+      expect(decimalResult).toEqual({ kind: 'reference', name: 'Numeric' });
 
       const serialized = serialize({
         declarations: [
@@ -74,7 +81,8 @@ describe('ColumnType Support', () => {
         ],
       });
 
-      expect(serialized).toContain('ColumnType<string, number | string, number | string>');
+      expect(serialized).toContain('num: Numeric');
+      expect(serialized).toContain('dec: Numeric');
     });
   });
 

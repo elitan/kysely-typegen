@@ -41,11 +41,14 @@ describe('Integration: Full pipeline', () => {
     // Check Generated columns
     expect(output).toContain('id: Generated<number>');
 
-    // Check ColumnType for timestamps
-    expect(output).toContain('ColumnType<Date, Date | string, Date | string>');
+    // Check helper type definitions
+    expect(output).toContain('export type Timestamp = ColumnType<Date, Date | string, Date | string>');
+    expect(output).toContain('export type Int8 = ColumnType<string, string | number | bigint, string | number | bigint>');
+    expect(output).toContain('export type Numeric = ColumnType<string, number | string, number | string>');
 
-    // Check nullable columns with ColumnType
-    expect(output).toContain('updated_at: ColumnType<Date, Date | string, Date | string> | null');
+    // Check columns use helper references
+    expect(output).toContain('updated_at: Timestamp | null');
+    expect(output).toContain('created_at: Generated<Timestamp>');
     expect(output).toContain('content: string | null');
 
     // Check non-nullable columns

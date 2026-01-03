@@ -3,7 +3,7 @@ import type { DialectName } from '@/dialects/types';
 
 export type TypeMapper = (
   dataType: string,
-  options: { isNullable: boolean; isArray?: boolean; unknownTypes?: Set<string> }
+  options: { isNullable: boolean; isArray?: boolean; unknownTypes?: Set<string>; usedHelpers?: Set<string> }
 ) => TypeNode;
 
 export type TransformOptions = {

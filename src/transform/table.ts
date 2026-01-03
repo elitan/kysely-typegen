@@ -11,10 +11,11 @@ export function transformTable(
   enumResolver: EnumNameResolver,
   mapType: TypeMapper,
   options?: TransformOptions,
-  unknownTypes?: Set<string>
+  unknownTypes?: Set<string>,
+  usedHelpers?: Set<string>
 ): InterfaceNode {
   const properties: PropertyNode[] = table.columns.map((column) =>
-    transformColumn(column, enums, enumResolver, mapType, options, unknownTypes)
+    transformColumn(column, enums, enumResolver, mapType, options, unknownTypes, usedHelpers)
   );
 
   return {
@@ -31,7 +32,8 @@ export function transformColumn(
   enumResolver: EnumNameResolver,
   mapType: TypeMapper,
   options?: TransformOptions,
-  unknownTypes?: Set<string>
+  unknownTypes?: Set<string>,
+  usedHelpers?: Set<string>
 ): PropertyNode {
   const matchingEnum = enums.find(
     (e) => e.name === column.dataType && e.schema === (column.dataTypeSchema ?? 'public')
@@ -53,6 +55,7 @@ export function transformColumn(
       isNullable: column.isNullable,
       isArray: column.isArray,
       unknownTypes,
+      usedHelpers,
     });
   }
 

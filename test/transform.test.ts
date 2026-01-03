@@ -13,30 +13,15 @@ describe('Transform', () => {
       expect(mapPostgresType('bool', false)).toEqual({ kind: 'primitive', value: 'boolean' });
     });
 
-    test('should map bigint to ColumnType with string/number/bigint', () => {
+    test('should map bigint to Int8 helper reference', () => {
       const result = mapPostgresType('int8', false);
-      expect(result.kind).toBe('generic');
-      if (result.kind === 'generic') {
-        expect(result.name).toBe('ColumnType');
-        expect(result.typeArguments).toHaveLength(3);
-        expect(result.typeArguments[0]).toEqual({ kind: 'primitive', value: 'string' });
-      }
+      expect(result).toEqual({ kind: 'reference', name: 'Int8' });
     });
 
-    test('should map timestamp to ColumnType with Date and string', () => {
-      const timestampResult = mapPostgresType('timestamp', false);
-      expect(timestampResult.kind).toBe('generic');
-      if (timestampResult.kind === 'generic') {
-        expect(timestampResult.name).toBe('ColumnType');
-        expect(timestampResult.typeArguments).toHaveLength(3);
-        expect(timestampResult.typeArguments[0]).toEqual({ kind: 'primitive', value: 'Date' });
-      }
-
-      const timestamptzResult = mapPostgresType('timestamptz', false);
-      expect(timestamptzResult.kind).toBe('generic');
-      if (timestamptzResult.kind === 'generic') {
-        expect(timestamptzResult.name).toBe('ColumnType');
-      }
+    test('should map timestamp to Timestamp helper reference', () => {
+      expect(mapPostgresType('timestamp', false)).toEqual({ kind: 'reference', name: 'Timestamp' });
+      expect(mapPostgresType('timestamptz', false)).toEqual({ kind: 'reference', name: 'Timestamp' });
+      expect(mapPostgresType('date', false)).toEqual({ kind: 'reference', name: 'Timestamp' });
     });
 
     test('should map json/jsonb to JsonValue reference', () => {
@@ -89,8 +74,9 @@ describe('Transform', () => {
 
       const { program } = transformDatabase(metadata);
 
-      // Should have import, Generated type, ArrayType, ArrayTypeImpl, 4 JSON types, IPostgresInterval, and 2 interfaces (User + DB)
-      expect(program.declarations).toHaveLength(11);
+      // Should have import, Generated type, ArrayType, ArrayTypeImpl, 4 JSON types, and 2 interfaces (User + DB)
+      // Note: IPostgresInterval and helper types only emitted when used
+      expect(program.declarations).toHaveLength(10);
 
       // Check import
       const importDecl = program.declarations[0];
@@ -439,15 +425,12 @@ describe('Transform', () => {
       }
     });
 
-    test('should handle array of bigints with ArrayType<ColumnType>', () => {
+    test('should handle array of bigints with ArrayType<Int8>', () => {
       const result = mapPostgresType('int8[]', false);
       expect(result.kind).toBe('generic');
       if (result.kind === 'generic') {
         expect(result.name).toBe('ArrayType');
-        expect(result.typeArguments[0]?.kind).toBe('generic');
-        if (result.typeArguments[0]?.kind === 'generic') {
-          expect(result.typeArguments[0].name).toBe('ColumnType');
-        }
+        expect(result.typeArguments[0]).toEqual({ kind: 'reference', name: 'Int8' });
       }
     });
 
@@ -542,30 +525,13 @@ describe('Transform', () => {
       expect(mapPostgresType('citext', false)).toEqual({ kind: 'primitive', value: 'string' });
     });
 
-    test('should map date to ColumnType with Date and string', () => {
-      const result = mapPostgresType('date', false);
-      expect(result.kind).toBe('generic');
-      if (result.kind === 'generic') {
-        expect(result.name).toBe('ColumnType');
-        expect(result.typeArguments).toHaveLength(3);
-        expect(result.typeArguments[0]).toEqual({ kind: 'primitive', value: 'Date' });
-      }
+    test('should map date to Timestamp helper reference', () => {
+      expect(mapPostgresType('date', false)).toEqual({ kind: 'reference', name: 'Timestamp' });
     });
 
-    test('should map numeric and decimal to ColumnType', () => {
-      const numericResult = mapPostgresType('numeric', false);
-      expect(numericResult.kind).toBe('generic');
-      if (numericResult.kind === 'generic') {
-        expect(numericResult.name).toBe('ColumnType');
-        expect(numericResult.typeArguments[0]).toEqual({ kind: 'primitive', value: 'string' });
-      }
-
-      const decimalResult = mapPostgresType('decimal', false);
-      expect(decimalResult.kind).toBe('generic');
-      if (decimalResult.kind === 'generic') {
-        expect(decimalResult.name).toBe('ColumnType');
-        expect(decimalResult.typeArguments[0]).toEqual({ kind: 'primitive', value: 'string' });
-      }
+    test('should map numeric and decimal to Numeric helper reference', () => {
+      expect(mapPostgresType('numeric', false)).toEqual({ kind: 'reference', name: 'Numeric' });
+      expect(mapPostgresType('decimal', false)).toEqual({ kind: 'reference', name: 'Numeric' });
     });
 
     test('should map float types to number', () => {
@@ -595,14 +561,8 @@ describe('Transform', () => {
       expect(mapPostgresType('money', false)).toEqual({ kind: 'primitive', value: 'string' });
     });
 
-    test('should map interval to ColumnType with IPostgresInterval', () => {
-      const result = mapPostgresType('interval', false);
-      expect(result.kind).toBe('generic');
-      if (result.kind === 'generic') {
-        expect(result.name).toBe('ColumnType');
-        expect(result.typeArguments).toHaveLength(3);
-        expect(result.typeArguments[0]).toEqual({ kind: 'reference', name: 'IPostgresInterval' });
-      }
+    test('should map interval to Interval helper reference', () => {
+      expect(mapPostgresType('interval', false)).toEqual({ kind: 'reference', name: 'Interval' });
     });
 
     test('should map range types to string', () => {
@@ -614,10 +574,13 @@ describe('Transform', () => {
       expect(mapPostgresType('tstzrange', false)).toEqual({ kind: 'primitive', value: 'string' });
     });
 
-    test('should map geometric types to unknown (not yet supported)', () => {
-      expect(mapPostgresType('point', false)).toEqual({ kind: 'primitive', value: 'unknown' });
+    test('should map point and circle to helper references', () => {
+      expect(mapPostgresType('point', false)).toEqual({ kind: 'reference', name: 'Point' });
+      expect(mapPostgresType('circle', false)).toEqual({ kind: 'reference', name: 'Circle' });
+    });
+
+    test('should map other geometric types to unknown', () => {
       expect(mapPostgresType('line', false)).toEqual({ kind: 'primitive', value: 'unknown' });
-      expect(mapPostgresType('circle', false)).toEqual({ kind: 'primitive', value: 'unknown' });
       expect(mapPostgresType('polygon', false)).toEqual({ kind: 'primitive', value: 'unknown' });
       expect(mapPostgresType('box', false)).toEqual({ kind: 'primitive', value: 'unknown' });
       expect(mapPostgresType('path', false)).toEqual({ kind: 'primitive', value: 'unknown' });
@@ -698,7 +661,7 @@ describe('Transform', () => {
         expect(jsonCol?.type).toEqual({ kind: 'reference', name: 'JsonValue' });
 
         const decimalCol = complexInterface.properties.find((p) => p.name === 'decimal_col');
-        expect(decimalCol?.type.kind).toBe('generic');
+        expect(decimalCol?.type).toEqual({ kind: 'reference', name: 'Numeric' });
       }
     });
   });
@@ -1223,7 +1186,7 @@ describe('Transform', () => {
       }
     });
 
-    test('should map interval column to ColumnType with IPostgresInterval', () => {
+    test('should map interval column to Interval helper reference', () => {
       const metadata: DatabaseMetadata = {
         tables: [
           {
@@ -1251,14 +1214,7 @@ describe('Transform', () => {
       expect(eventInterface).toBeDefined();
       if (eventInterface?.kind === 'interface') {
         const durationProp = eventInterface.properties.find((p) => p.name === 'duration');
-        expect(durationProp?.type.kind).toBe('generic');
-        if (durationProp?.type.kind === 'generic') {
-          expect(durationProp.type.name).toBe('ColumnType');
-          expect(durationProp.type.typeArguments[0]).toEqual({
-            kind: 'reference',
-            name: 'IPostgresInterval',
-          });
-        }
+        expect(durationProp?.type).toEqual({ kind: 'reference', name: 'Interval' });
       }
     });
 
@@ -1291,7 +1247,7 @@ describe('Transform', () => {
         const timeoutProp = taskInterface.properties.find((p) => p.name === 'timeout');
         expect(timeoutProp?.type.kind).toBe('union');
         if (timeoutProp?.type.kind === 'union') {
-          expect(timeoutProp.type.types[0].kind).toBe('generic');
+          expect(timeoutProp.type.types[0]).toEqual({ kind: 'reference', name: 'Interval' });
           expect(timeoutProp.type.types[1]).toEqual({ kind: 'primitive', value: 'null' });
         }
       }

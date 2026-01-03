@@ -23,17 +23,13 @@ export type JsonObject = { [key: string]: JsonValue };
 
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 
-export interface IPostgresInterval {
-  years?: number;
-  months?: number;
-  days?: number;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-  milliseconds?: number;
-}
-
 export type StatusEnum = 'pending' | 'approved' | 'rejected';
+
+export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export type Int8 = ColumnType<string, string | number | bigint, string | number | bigint>;
+
+export type Numeric = ColumnType<string, number | string, number | string>;
 
 export interface Comment {
   id: Generated<number>;
@@ -41,13 +37,13 @@ export interface Comment {
   user_id: number;
   content: string;
   status: Generated<StatusEnum>;
-  created_at: Generated<ColumnType<Date, Date | string, Date | string>>;
+  created_at: Generated<Timestamp>;
 }
 
 export interface Measurement {
   id: Generated<number>;
-  measure_date: ColumnType<Date, Date | string, Date | string>;
-  value: ColumnType<string, number | string, number | string>;
+  measure_date: Timestamp;
+  value: Numeric;
   sensor_id: number;
 }
 
@@ -56,7 +52,7 @@ export interface Post {
   user_id: number;
   title: string;
   content: string | null;
-  published_at: ColumnType<Date, Date | string, Date | string> | null;
+  published_at: Timestamp | null;
   view_count: Generated<number>;
 }
 
@@ -64,8 +60,8 @@ export interface User {
   id: Generated<number>;
   email: string;
   username: string;
-  created_at: Generated<ColumnType<Date, Date | string, Date | string>>;
-  updated_at: ColumnType<Date, Date | string, Date | string> | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Timestamp | null;
   is_active: Generated<boolean>;
   metadata: JsonValue | null;
   tags: Generated<string[] | null>;
@@ -76,14 +72,14 @@ export interface ActiveUser {
   id: number | null;
   email: string | null;
   username: string | null;
-  created_at: ColumnType<Date, Date | string, Date | string> | null;
+  created_at: Timestamp | null;
 }
 
 export interface UserStat {
   id: number | null;
   username: string | null;
-  post_count: ColumnType<string, string | number | bigint, string | number | bigint> | null;
-  comment_count: ColumnType<string, string | number | bigint, string | number | bigint> | null;
+  post_count: Int8 | null;
+  comment_count: Int8 | null;
 }
 
 export interface UserTagsView {

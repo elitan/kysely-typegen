@@ -6,6 +6,7 @@ import { transformEnum, EnumNameResolver } from '@/transform/enum';
 import { transformTable, createDBInterface } from '@/transform/table';
 import { getDialect } from '@/dialects';
 import { mapPostgresType as _mapPostgresType } from '@/dialects/postgres/type-mapper';
+import { HELPER_DEFINITIONS } from '@/dialects/postgres/helpers';
 
 export type { TransformOptions, TransformResult, TransformWarning, TypeMapper } from '@/transform/types';
 
@@ -21,6 +22,7 @@ export function mapPostgresType(
 export function transformDatabase(metadata: DatabaseMetadata, options?: TransformOptions): TransformResult {
   const declarations: (InterfaceNode | TypeAliasNode)[] = [];
   const unknownTypes = new Set<string>();
+  const usedHelpers = new Set<string>();
 
   const dialectName = options?.dialectName ?? 'postgres';
   const dialect = getDialect(dialectName);
@@ -118,22 +120,6 @@ export function transformDatabase(metadata: DatabaseMetadata, options?: Transfor
     exported: true,
   });
 
-  if (dialectName === 'postgres') {
-    declarations.push({
-      kind: 'interface',
-      name: 'IPostgresInterval',
-      properties: [
-        { name: 'years', type: { kind: 'primitive', value: 'number' }, optional: true },
-        { name: 'months', type: { kind: 'primitive', value: 'number' }, optional: true },
-        { name: 'days', type: { kind: 'primitive', value: 'number' }, optional: true },
-        { name: 'hours', type: { kind: 'primitive', value: 'number' }, optional: true },
-        { name: 'minutes', type: { kind: 'primitive', value: 'number' }, optional: true },
-        { name: 'seconds', type: { kind: 'primitive', value: 'number' }, optional: true },
-        { name: 'milliseconds', type: { kind: 'primitive', value: 'number' }, optional: true },
-      ],
-      exported: true,
-    });
-  }
 
   if (dialectName === 'mysql') {
     declarations.push({
@@ -185,8 +171,35 @@ export function transformDatabase(metadata: DatabaseMetadata, options?: Transfor
 
   const tableInterfaces: InterfaceNode[] = [];
   for (const table of filteredTables) {
-    tableInterfaces.push(transformTable(table, metadata.enums, enumResolver, mapType, options, unknownTypes));
+    tableInterfaces.push(transformTable(table, metadata.enums, enumResolver, mapType, options, unknownTypes, usedHelpers));
   }
+
+  if (dialectName === 'postgres') {
+    if (usedHelpers.has('Interval')) {
+      declarations.push({
+        kind: 'interface',
+        name: 'IPostgresInterval',
+        properties: [
+          { name: 'years', type: { kind: 'primitive', value: 'number' }, optional: true },
+          { name: 'months', type: { kind: 'primitive', value: 'number' }, optional: true },
+          { name: 'days', type: { kind: 'primitive', value: 'number' }, optional: true },
+          { name: 'hours', type: { kind: 'primitive', value: 'number' }, optional: true },
+          { name: 'minutes', type: { kind: 'primitive', value: 'number' }, optional: true },
+          { name: 'seconds', type: { kind: 'primitive', value: 'number' }, optional: true },
+          { name: 'milliseconds', type: { kind: 'primitive', value: 'number' }, optional: true },
+        ],
+        exported: true,
+      });
+    }
+
+    const helperOrder = ['Timestamp', 'Int8', 'Numeric', 'Interval', 'Point', 'Circle'];
+    for (const name of helperOrder) {
+      if (usedHelpers.has(name)) {
+        declarations.push(HELPER_DEFINITIONS[name]);
+      }
+    }
+  }
+
   declarations.push(...tableInterfaces);
 
   declarations.push(createDBInterface(filteredTables, options));

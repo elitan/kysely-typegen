@@ -1,26 +1,9 @@
 import type { TypeNode } from '@/ast/nodes';
 import type { MapTypeOptions } from '@/dialects/types';
 
-function createColumnType(
-  selectType: TypeNode,
-  insertType?: TypeNode,
-  updateType?: TypeNode
-): TypeNode {
-  const typeArguments: TypeNode[] = [selectType];
-
-  if (insertType) {
-    typeArguments.push(insertType);
-
-    if (updateType) {
-      typeArguments.push(updateType);
-    }
-  }
-
-  return {
-    kind: 'generic',
-    name: 'ColumnType',
-    typeArguments,
-  };
+function helper(name: string, options: MapTypeOptions): TypeNode {
+  options.usedHelpers?.add(name);
+  return { kind: 'reference', name };
 }
 
 export function mapPostgresType(dataType: string, options: MapTypeOptions): TypeNode {
@@ -28,7 +11,7 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
 
   if (isArray || dataType.endsWith('[]')) {
     const baseTypeName = dataType.endsWith('[]') ? dataType.slice(0, -2) : dataType;
-    const elementType = mapPostgresType(baseTypeName, { isNullable: false, isArray: false, unknownTypes });
+    const elementType = mapPostgresType(baseTypeName, { isNullable: false, isArray: false, unknownTypes, usedHelpers: options.usedHelpers });
 
     const isSimple = elementType.kind === 'primitive' &&
       ['boolean', 'number', 'string'].includes(elementType.value);
@@ -62,25 +45,7 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
 
     case 'int8':
     case 'bigint':
-      baseType = createColumnType(
-        { kind: 'primitive', value: 'string' },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'primitive', value: 'string' },
-            { kind: 'primitive', value: 'number' },
-            { kind: 'primitive', value: 'bigint' },
-          ],
-        },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'primitive', value: 'string' },
-            { kind: 'primitive', value: 'number' },
-            { kind: 'primitive', value: 'bigint' },
-          ],
-        }
-      );
+      baseType = helper('Int8', options);
       break;
 
     case 'float4':
@@ -92,23 +57,7 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
 
     case 'numeric':
     case 'decimal':
-      baseType = createColumnType(
-        { kind: 'primitive', value: 'string' },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'primitive', value: 'number' },
-            { kind: 'primitive', value: 'string' },
-          ],
-        },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'primitive', value: 'number' },
-            { kind: 'primitive', value: 'string' },
-          ],
-        }
-      );
+      baseType = helper('Numeric', options);
       break;
 
     case 'varchar':
@@ -127,23 +76,7 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
     case 'timestamp':
     case 'timestamptz':
     case 'date':
-      baseType = createColumnType(
-        { kind: 'primitive', value: 'Date' },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'primitive', value: 'Date' },
-            { kind: 'primitive', value: 'string' },
-          ],
-        },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'primitive', value: 'Date' },
-            { kind: 'primitive', value: 'string' },
-          ],
-        }
-      );
+      baseType = helper('Timestamp', options);
       break;
 
     case 'time':
@@ -152,23 +85,7 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
       break;
 
     case 'interval':
-      baseType = createColumnType(
-        { kind: 'reference', name: 'IPostgresInterval' },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'reference', name: 'IPostgresInterval' },
-            { kind: 'primitive', value: 'string' },
-          ],
-        },
-        {
-          kind: 'union',
-          types: [
-            { kind: 'reference', name: 'IPostgresInterval' },
-            { kind: 'primitive', value: 'string' },
-          ],
-        }
-      );
+      baseType = helper('Interval', options);
       break;
 
     case 'money':
@@ -182,6 +99,14 @@ export function mapPostgresType(dataType: string, options: MapTypeOptions): Type
 
     case 'bytea':
       baseType = { kind: 'primitive', value: 'Buffer' };
+      break;
+
+    case 'point':
+      baseType = helper('Point', options);
+      break;
+
+    case 'circle':
+      baseType = helper('Circle', options);
       break;
 
     case 'int4range':

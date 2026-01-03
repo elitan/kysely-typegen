@@ -12,6 +12,7 @@ export type MapTypeOptions = {
   isNullable: boolean;
   isArray?: boolean;
   unknownTypes?: Set<string>;
+  usedHelpers?: Set<string>;
 };
 
 export interface Dialect {
