@@ -1,7 +1,8 @@
 import type { Kysely } from 'kysely';
 import { sql } from 'kysely';
-import type { ColumnMetadata, DatabaseMetadata, EnumMetadata, TableMetadata } from '@/introspect/types';
+import type { CheckConstraintValues, ColumnMetadata, DatabaseMetadata, EnumMetadata, TableMetadata } from '@/introspect/types';
 import type { IntrospectOptions } from '@/dialects/types';
+import { parseCheckConstraint } from '@/utils/check-constraint-parser';
 
 type RawColumn = {
   table_schema: string;
@@ -14,6 +15,8 @@ type RawColumn = {
   is_identity: string;
   column_default: string | null;
   column_comment: string | null;
+  domain_name: string | null;
+  domain_schema: string | null;
 };
 
 type RawEnum = {
@@ -33,17 +36,35 @@ type PartitionInfo = {
   name: string;
 };
 
+type RawCheckConstraint = {
+  table_schema: string;
+  table_name: string;
+  column_name: string;
+  check_definition: string;
+};
+
+type RawDomainCheckConstraint = {
+  domain_schema: string;
+  domain_name: string;
+  check_definition: string;
+};
+
+type CheckConstraintMap = Map<string, CheckConstraintValues>;
+type DomainCheckConstraintMap = Map<string, CheckConstraintValues>;
+
 export async function introspectPostgres(
   db: Kysely<any>,
   options: IntrospectOptions,
 ): Promise<DatabaseMetadata> {
-  const [domains, partitions, baseTables, regularViews, materializedViews, enums] = await Promise.all([
+  const [domains, partitions, baseTables, regularViews, materializedViews, enums, checkConstraints, domainCheckConstraints] = await Promise.all([
     introspectDomains(db),
     introspectPartitions(db),
     introspectTables(db, options.schemas),
     introspectViews(db, options.schemas),
     introspectMaterializedViews(db, options.schemas),
     introspectEnums(db, options.schemas),
+    introspectCheckConstraints(db, options.schemas),
+    introspectDomainCheckConstraints(db, options.schemas),
   ]);
 
   const tables = [...baseTables, ...regularViews, ...materializedViews].map((table) => {
@@ -54,10 +75,22 @@ export async function introspectPostgres(
     return {
       ...table,
       isPartition: isPartition || undefined,
-      columns: table.columns.map((column) => ({
-        ...column,
-        dataType: getRootType(column, domains),
-      })),
+      columns: table.columns.map((column) => {
+        const rootType = getRootType(column, domains);
+        const checkConstraint = getCheckConstraint(
+          table.schema,
+          table.name,
+          column,
+          checkConstraints,
+          domainCheckConstraints,
+          domains
+        );
+        return {
+          ...column,
+          dataType: rootType,
+          ...(checkConstraint && { checkConstraint }),
+        };
+      }),
     };
   });
 
@@ -79,6 +112,8 @@ async function introspectTables(db: Kysely<any>, schemas: string[]): Promise<Tab
       c.is_nullable,
       c.is_identity,
       c.column_default,
+      c.domain_name,
+      c.domain_schema,
       pg_catalog.col_description(
         (c.table_schema||'.'||c.table_name)::regclass::oid,
         c.ordinal_position
@@ -131,6 +166,11 @@ async function introspectTables(db: Kysely<any>, schemas: string[]): Promise<Tab
         columnMetadata.comment = row.column_comment;
       }
 
+      if (row.domain_name) {
+        columnMetadata.domainName = row.domain_name;
+        columnMetadata.domainSchema = row.domain_schema ?? undefined;
+      }
+
       table.columns.push(columnMetadata);
     }
   }
@@ -150,6 +190,8 @@ async function introspectViews(db: Kysely<any>, schemas: string[]): Promise<Tabl
       c.is_nullable,
       c.is_identity,
       c.column_default,
+      c.domain_name,
+      c.domain_schema,
       pg_catalog.col_description(
         (c.table_schema||'.'||c.table_name)::regclass::oid,
         c.ordinal_position
@@ -201,6 +243,11 @@ async function introspectViews(db: Kysely<any>, schemas: string[]): Promise<Tabl
 
       if (row.column_comment) {
         columnMetadata.comment = row.column_comment;
+      }
+
+      if (row.domain_name) {
+        columnMetadata.domainName = row.domain_name;
+        columnMetadata.domainSchema = row.domain_schema ?? undefined;
       }
 
       table.columns.push(columnMetadata);
@@ -384,4 +431,88 @@ function parsePostgresArray(value: string | string[]): string[] {
   }
 
   return [value];
+}
+
+async function introspectCheckConstraints(db: Kysely<any>, schemas: string[]): Promise<CheckConstraintMap> {
+  const rawConstraints = await sql<RawCheckConstraint>`
+    SELECT
+      n.nspname AS table_schema,
+      c.relname AS table_name,
+      a.attname AS column_name,
+      pg_get_constraintdef(pgc.oid) AS check_definition
+    FROM pg_constraint pgc
+    JOIN pg_class c ON pgc.conrelid = c.oid
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    JOIN pg_attribute a ON a.attrelid = pgc.conrelid AND a.attnum = ANY(pgc.conkey)
+    WHERE pgc.contype = 'c'
+      AND array_length(pgc.conkey, 1) = 1
+      AND n.nspname = ANY(${schemas})
+  `.execute(db);
+
+  const constraintMap: CheckConstraintMap = new Map();
+
+  for (const row of rawConstraints.rows) {
+    const key = `${row.table_schema}.${row.table_name}.${row.column_name}`;
+    if (constraintMap.has(key)) continue;
+
+    const parsed = parseCheckConstraint(row.check_definition);
+    if (parsed) {
+      constraintMap.set(key, parsed);
+    }
+  }
+
+  return constraintMap;
+}
+
+async function introspectDomainCheckConstraints(db: Kysely<any>, schemas: string[]): Promise<DomainCheckConstraintMap> {
+  const rawConstraints = await sql<RawDomainCheckConstraint>`
+    SELECT
+      n.nspname AS domain_schema,
+      t.typname AS domain_name,
+      pg_get_constraintdef(pgc.oid) AS check_definition
+    FROM pg_constraint pgc
+    JOIN pg_type t ON pgc.contypid = t.oid
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE pgc.contype = 'c'
+      AND n.nspname = ANY(${schemas})
+  `.execute(db);
+
+  const constraintMap: DomainCheckConstraintMap = new Map();
+
+  for (const row of rawConstraints.rows) {
+    const key = `${row.domain_schema}.${row.domain_name}`;
+    if (constraintMap.has(key)) continue;
+
+    const parsed = parseCheckConstraint(row.check_definition);
+    if (parsed) {
+      constraintMap.set(key, parsed);
+    }
+  }
+
+  return constraintMap;
+}
+
+function getCheckConstraint(
+  tableSchema: string,
+  tableName: string,
+  column: ColumnMetadata,
+  checkConstraints: CheckConstraintMap,
+  domainCheckConstraints: DomainCheckConstraintMap,
+  domains: DomainInfo[]
+): CheckConstraintValues | undefined {
+  const columnKey = `${tableSchema}.${tableName}.${column.name}`;
+  const directConstraint = checkConstraints.get(columnKey);
+  if (directConstraint) {
+    return directConstraint;
+  }
+
+  if (column.domainName && column.domainSchema) {
+    const domainKey = `${column.domainSchema}.${column.domainName}`;
+    const domainConstraint = domainCheckConstraints.get(domainKey);
+    if (domainConstraint) {
+      return domainConstraint;
+    }
+  }
+
+  return undefined;
 }

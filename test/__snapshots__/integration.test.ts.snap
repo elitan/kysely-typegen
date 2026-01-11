@@ -1,4 +1,4 @@
-// Bun Snapshot v1, https://goo.gl/fbAQLP
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Integration: Full pipeline should generate complete TypeScript types from database 1`] = `
 "import type { ColumnType } from 'kysely';
@@ -31,6 +31,16 @@ export type Int8 = ColumnType<string, string | number | bigint, string | number 
 
 export type Numeric = ColumnType<string, number | string, number | string>;
 
+export interface CheckConstraintsTest {
+  id: Generated<number>;
+  status: 'pending' | 'active' | 'completed';
+  'type': 'proxy' | 'redirect' | null;
+  priority: 1 | 2 | 3 | 4 | 5 | null;
+  level: 'low' | 'medium' | 'high' | null;
+  range_col: number | null;
+  regex_col: string | null;
+}
+
 export interface Comment {
   id: Generated<number>;
   post_id: number;
@@ -38,6 +48,11 @@ export interface Comment {
   content: string;
   status: Generated<StatusEnum>;
   created_at: Generated<Timestamp>;
+}
+
+export interface DomainCheckTest {
+  id: Generated<number>;
+  status: 'draft' | 'published' | 'archived';
 }
 
 export interface Measurement {
@@ -89,7 +104,9 @@ export interface UserTagsView {
 }
 
 export interface DB {
+  check_constraints_test: CheckConstraintsTest;
   comments: Comment;
+  domain_check_test: DomainCheckTest;
   measurements: Measurement;
   posts: Post;
   users: User;
@@ -104,6 +121,42 @@ exports[`Integration: Full pipeline should generate Zod schemas from database 1`
 "import { z } from 'zod';
 
 export const statusEnumSchema = z.enum(['pending', 'approved', 'rejected']);
+
+export const checkConstraintsTestSchema = z.object({
+  id: z.number(),
+  status: z.enum(['pending', 'active', 'completed']),
+  'type': z.enum(['proxy', 'redirect']).nullable(),
+  priority: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).nullable(),
+  level: z.enum(['low', 'medium', 'high']).nullable(),
+  range_col: z.number().nullable(),
+  regex_col: z.string().nullable(),
+});
+
+export const newCheckConstraintsTestSchema = z.object({
+  id: z.number().optional(),
+  status: z.enum(['pending', 'active', 'completed']),
+  'type': z.enum(['proxy', 'redirect']).nullable(),
+  priority: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).nullable(),
+  level: z.enum(['low', 'medium', 'high']).nullable(),
+  range_col: z.number().nullable(),
+  regex_col: z.string().nullable(),
+});
+
+export const checkConstraintsTestUpdateSchema = z.object({
+  id: z.number().optional(),
+  status: z.enum(['pending', 'active', 'completed']).optional(),
+  'type': z.enum(['proxy', 'redirect']).nullable().optional(),
+  priority: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).nullable().optional(),
+  level: z.enum(['low', 'medium', 'high']).nullable().optional(),
+  range_col: z.number().nullable().optional(),
+  regex_col: z.string().nullable().optional(),
+});
+
+export type CheckConstraintsTest = z.infer<typeof checkConstraintsTestSchema>;
+
+export type NewCheckConstraintsTest = z.infer<typeof newCheckConstraintsTestSchema>;
+
+export type CheckConstraintsTestUpdate = z.infer<typeof checkConstraintsTestUpdateSchema>;
 
 export const commentSchema = z.object({
   id: z.number(),
@@ -137,6 +190,27 @@ export type Comment = z.infer<typeof commentSchema>;
 export type NewComment = z.infer<typeof newCommentSchema>;
 
 export type CommentUpdate = z.infer<typeof commentUpdateSchema>;
+
+export const domainCheckTestSchema = z.object({
+  id: z.number(),
+  status: z.enum(['draft', 'published', 'archived']),
+});
+
+export const newDomainCheckTestSchema = z.object({
+  id: z.number().optional(),
+  status: z.enum(['draft', 'published', 'archived']),
+});
+
+export const domainCheckTestUpdateSchema = z.object({
+  id: z.number().optional(),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+});
+
+export type DomainCheckTest = z.infer<typeof domainCheckTestSchema>;
+
+export type NewDomainCheckTest = z.infer<typeof newDomainCheckTestSchema>;
+
+export type DomainCheckTestUpdate = z.infer<typeof domainCheckTestUpdateSchema>;
 
 export const measurementSchema = z.object({
   id: z.number(),

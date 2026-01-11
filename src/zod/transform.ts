@@ -71,24 +71,36 @@ function transformColumnToZod(
 
   let schema: ZodSchemaNode;
 
+  const modifiers: ('nullable' | 'optional')[] = [];
+  if (column.isNullable) modifiers.push('nullable');
+  const isOptional =
+    mode === 'update' || (mode === 'insert' && (column.isAutoIncrement || column.hasDefaultValue));
+  if (isOptional) modifiers.push('optional');
+
   if (matchingEnum) {
     const enumName = enumResolver.getName(matchingEnum);
     schema = { kind: 'zod-reference', name: `${uncapitalize(enumName)}Schema` };
 
-    const modifiers: ('nullable' | 'optional')[] = [];
-    if (column.isNullable) modifiers.push('nullable');
-
-    const isOptional =
-      mode === 'update' || (mode === 'insert' && (column.isAutoIncrement || column.hasDefaultValue));
-    if (isOptional) modifiers.push('optional');
+    if (modifiers.length > 0) {
+      schema = { kind: 'zod-modified', schema, modifiers };
+    }
+  } else if (column.checkConstraint) {
+    if (column.checkConstraint.type === 'string') {
+      schema = { kind: 'zod-enum', values: column.checkConstraint.values };
+    } else {
+      schema = {
+        kind: 'zod-union',
+        schemas: column.checkConstraint.values.map((v) => ({
+          kind: 'zod-literal' as const,
+          value: v,
+        })),
+      };
+    }
 
     if (modifiers.length > 0) {
       schema = { kind: 'zod-modified', schema, modifiers };
     }
   } else {
-    const isOptional =
-      mode === 'update' || (mode === 'insert' && (column.isAutoIncrement || column.hasDefaultValue));
-
     schema = mapPostgresTypeToZod(column.dataType, {
       isNullable: column.isNullable,
       isArray: column.isArray,
