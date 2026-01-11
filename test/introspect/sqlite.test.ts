@@ -4,6 +4,8 @@ import { Database } from 'bun:sqlite';
 import { readFileSync } from 'fs';
 import { introspectSqlite } from '@/dialects/sqlite/introspect';
 import { createBunSqliteDatabase } from '../utils/bun-sqlite';
+import { transformDatabaseToZod } from '@/zod/transform';
+import { serializeZod } from '@/zod/serialize';
 
 describe('SQLite Introspector', () => {
   let db: Kysely<any>;
@@ -260,5 +262,35 @@ describe('SQLite Introspector', () => {
       type: 'number',
       values: [1, 2, 3, 4, 5],
     });
+  });
+
+  test('e2e: CHECK constraints should generate Zod enums', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("import { z } from 'zod';");
+    expect(output).toContain('z.enum([');
+    expect(output).toContain("'draft'");
+    expect(output).toContain("'published'");
+    expect(output).toContain("'archived'");
+  });
+
+  test('e2e: CHECK constraints with boolean pattern should generate z.boolean()', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain('z.boolean()');
+  });
+
+  test('e2e: CHECK constraints with numeric values should generate z.union of z.literal', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain('z.union([');
+    expect(output).toContain('z.literal(1)');
+    expect(output).toContain('z.literal(5)');
   });
 });
