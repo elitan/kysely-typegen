@@ -167,4 +167,80 @@ describe('CLI', () => {
       expect(stderr).toContain('Cannot use --verify with --print');
     });
   });
+
+  describe('--zod flag', () => {
+    test('should output Zod schemas to stdout with --print', async () => {
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--zod', '--print'],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const stdout = await new Response(proc.stdout).text();
+      await proc.exited;
+
+      expect(stdout).toContain("import { z } from 'zod';");
+      expect(stdout).toContain('export const userSchema = z.object({');
+      expect(stdout).toContain('export const newUserSchema = z.object({');
+      expect(stdout).toContain('export type User = z.infer<typeof userSchema>;');
+    });
+
+    test('should show Zod schemas generated message', async () => {
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--zod', '--print'],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const stderr = await new Response(proc.stderr).text();
+      await proc.exited;
+
+      expect(stderr).toContain('Zod schemas generated');
+    });
+
+    test('should write to db-schemas.ts by default', async () => {
+      const testOutputPath = '/tmp/db-schemas.ts';
+
+      try {
+        await unlink(testOutputPath);
+      } catch {
+        // file doesn't exist
+      }
+
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--zod', '--out', testOutputPath],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      await proc.exited;
+
+      const fileExists = await Bun.file(testOutputPath).exists();
+      expect(fileExists).toBe(true);
+
+      const content = await Bun.file(testOutputPath).text();
+      expect(content).toContain("import { z } from 'zod';");
+      expect(content).toContain('export const userSchema = z.object({');
+
+      await unlink(testOutputPath);
+    });
+
+    test('should support --camel-case with --zod', async () => {
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--zod', '--camel-case', '--print'],
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const stdout = await new Response(proc.stdout).text();
+      await proc.exited;
+
+      expect(stdout).toContain('createdAt:');
+      expect(stdout).not.toContain('created_at:');
+    });
+  });
 });

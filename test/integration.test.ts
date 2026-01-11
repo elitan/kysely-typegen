@@ -4,6 +4,8 @@ import { Pool } from 'pg';
 import { serialize } from '@/ast/serialize';
 import { introspectPostgres as introspectDatabase } from '@/dialects/postgres/introspect';
 import { transformDatabase } from '@/transform';
+import { transformDatabaseToZod } from '@/zod/transform';
+import { serializeZod } from '@/zod/serialize';
 
 const TEST_DATABASE_URL = 'postgres://test_user:test_password@localhost:5433/test_db';
 
@@ -73,5 +75,39 @@ describe('Integration: Full pipeline', () => {
     expect(output).toContain("import type { ColumnType } from 'kysely'");
     expect(output).toContain('export type Generated<T>');
     expect(output).toContain('export interface DB {');
+  });
+
+  test('should generate Zod schemas from database', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("import { z } from 'zod';");
+
+    expect(output).toContain('export const userSchema = z.object({');
+    expect(output).toContain('export const newUserSchema = z.object({');
+    expect(output).toContain('export const userUpdateSchema = z.object({');
+
+    expect(output).toContain('export type User = z.infer<typeof userSchema>;');
+    expect(output).toContain('export type NewUser = z.infer<typeof newUserSchema>;');
+    expect(output).toContain('export type UserUpdate = z.infer<typeof userUpdateSchema>;');
+
+    expect(output).toContain('export const statusEnumSchema = z.enum([');
+
+    expect(output).toContain('id: z.number()');
+    expect(output).toContain('email: z.string()');
+
+    expect(output).toMatchSnapshot();
+  });
+
+  test('should generate Zod schemas with camelCase option', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const zodProgram = transformDatabaseToZod(metadata, { camelCase: true });
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain('createdAt:');
+    expect(output).not.toContain('created_at:');
   });
 });
