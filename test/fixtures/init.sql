@@ -107,3 +107,21 @@ CREATE TABLE measurements_2024_q1 PARTITION OF measurements
 
 CREATE TABLE measurements_2024_q2 PARTITION OF measurements
   FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+-- CHECK constraint test fixtures
+CREATE DOMAIN status_domain AS TEXT CHECK (VALUE IN ('draft', 'published', 'archived'));
+
+CREATE TABLE check_constraints_test (
+  id SERIAL PRIMARY KEY,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'active', 'completed')),
+  type TEXT CHECK (type IN ('proxy', 'redirect')),
+  priority INT CHECK (priority IN (1, 2, 3, 4, 5)),
+  level TEXT CHECK (level = 'low' OR level = 'medium' OR level = 'high'),
+  range_col INT CHECK (range_col >= 0),
+  regex_col TEXT CHECK (regex_col ~* '^[a-z]+$')
+);
+
+CREATE TABLE domain_check_test (
+  id SERIAL PRIMARY KEY,
+  status status_domain NOT NULL
+);

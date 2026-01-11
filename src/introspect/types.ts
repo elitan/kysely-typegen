@@ -2,6 +2,10 @@
  * Metadata types for database introspection
  */
 
+export type CheckConstraintValues =
+  | { type: 'string'; values: string[] }
+  | { type: 'number'; values: number[] };
+
 export type ColumnMetadata = {
   name: string;
   dataType: string;
@@ -11,6 +15,9 @@ export type ColumnMetadata = {
   hasDefaultValue: boolean;
   isArray?: boolean;
   comment?: string;
+  checkConstraint?: CheckConstraintValues;
+  domainName?: string;
+  domainSchema?: string;
 };
 
 export type TableMetadata = {
