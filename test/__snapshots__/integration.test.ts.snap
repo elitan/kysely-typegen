@@ -33,10 +33,10 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 
 export interface CheckConstraintsTest {
   id: Generated<number>;
-  status: string;
-  'type': string | null;
-  priority: number | null;
-  level: string | null;
+  status: 'pending' | 'active' | 'completed';
+  'type': 'proxy' | 'redirect' | null;
+  priority: 1 | 2 | 3 | 4 | 5 | null;
+  level: 'low' | 'medium' | 'high' | null;
   range_col: number | null;
   regex_col: string | null;
 }
@@ -52,7 +52,7 @@ export interface Comment {
 
 export interface DomainCheckTest {
   id: Generated<number>;
-  status: string;
+  status: 'draft' | 'published' | 'archived';
 }
 
 export interface Measurement {
