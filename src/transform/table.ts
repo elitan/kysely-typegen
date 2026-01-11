@@ -52,7 +52,17 @@ export function transformColumn(
     }
   } else if (column.checkConstraint) {
     if (column.checkConstraint.type === 'boolean') {
-      type = { kind: 'primitive', value: 'boolean' };
+      if (options?.noBooleanCoerce) {
+        type = {
+          kind: 'union',
+          types: [
+            { kind: 'literal', value: 0 },
+            { kind: 'literal', value: 1 },
+          ],
+        };
+      } else {
+        type = { kind: 'primitive', value: 'boolean' };
+      }
       if (column.isNullable) {
         type = {
           kind: 'union',

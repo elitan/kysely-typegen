@@ -97,6 +97,38 @@ describe('Zod Serializer', () => {
     test('should serialize custom types', () => {
       expect(serializeZodSchema({ kind: 'zod-custom', typeReference: 'Buffer' })).toBe('z.custom<Buffer>()');
     });
+
+    test('should serialize transform', () => {
+      expect(serializeZodSchema({
+        kind: 'zod-transform',
+        schema: {
+          kind: 'zod-union',
+          schemas: [
+            { kind: 'zod-literal', value: 0 },
+            { kind: 'zod-literal', value: 1 },
+          ],
+        },
+        transformFn: 'v => v === 1',
+      })).toBe('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1)');
+    });
+
+    test('should serialize transform with modifiers', () => {
+      expect(serializeZodSchema({
+        kind: 'zod-modified',
+        schema: {
+          kind: 'zod-transform',
+          schema: {
+            kind: 'zod-union',
+            schemas: [
+              { kind: 'zod-literal', value: 0 },
+              { kind: 'zod-literal', value: 1 },
+            ],
+          },
+          transformFn: 'v => v === 1',
+        },
+        modifiers: ['nullable'],
+      })).toBe('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1).nullable()');
+    });
   });
 
   describe('serializeZod (full program)', () => {

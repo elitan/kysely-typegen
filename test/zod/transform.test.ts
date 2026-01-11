@@ -238,4 +238,83 @@ describe('transformDatabaseToZod', () => {
     expect(code).toContain('export type NewUser = z.infer<typeof newUserSchema>;');
     expect(code).toContain('export type UserUpdate = z.infer<typeof userUpdateSchema>;');
   });
+
+  test('should generate transform for boolean CHECK constraints by default', () => {
+    const metadata: DatabaseMetadata = {
+      tables: [
+        {
+          schema: 'public',
+          name: 'settings',
+          columns: [
+            {
+              name: 'is_enabled',
+              dataType: 'integer',
+              isNullable: false,
+              isAutoIncrement: false,
+              hasDefaultValue: false,
+              checkConstraint: { type: 'boolean' },
+            },
+          ],
+        },
+      ],
+      enums: [],
+    };
+    const program = transformDatabaseToZod(metadata);
+    const code = serializeZod(program);
+
+    expect(code).toContain('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1)');
+  });
+
+  test('should generate union without transform when noBooleanCoerce is true', () => {
+    const metadata: DatabaseMetadata = {
+      tables: [
+        {
+          schema: 'public',
+          name: 'settings',
+          columns: [
+            {
+              name: 'is_enabled',
+              dataType: 'integer',
+              isNullable: false,
+              isAutoIncrement: false,
+              hasDefaultValue: false,
+              checkConstraint: { type: 'boolean' },
+            },
+          ],
+        },
+      ],
+      enums: [],
+    };
+    const program = transformDatabaseToZod(metadata, { noBooleanCoerce: true });
+    const code = serializeZod(program);
+
+    expect(code).toContain('z.union([z.literal(0), z.literal(1)])');
+    expect(code).not.toContain('.transform(v => v === 1)');
+  });
+
+  test('should handle nullable boolean CHECK constraints with transform', () => {
+    const metadata: DatabaseMetadata = {
+      tables: [
+        {
+          schema: 'public',
+          name: 'settings',
+          columns: [
+            {
+              name: 'is_public',
+              dataType: 'integer',
+              isNullable: true,
+              isAutoIncrement: false,
+              hasDefaultValue: false,
+              checkConstraint: { type: 'boolean' },
+            },
+          ],
+        },
+      ],
+      enums: [],
+    };
+    const program = transformDatabaseToZod(metadata);
+    const code = serializeZod(program);
+
+    expect(code).toContain('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1).nullable()');
+  });
 });

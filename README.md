@@ -52,6 +52,7 @@ npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 | `--include-pattern <glob>` | Only include matching tables |
 | `--exclude-pattern <glob>` | Exclude matching tables |
 | `--zod` | Generate Zod schemas instead of TypeScript interfaces |
+| `--no-boolean-coerce` | Output `0 \| 1` instead of coercing to `boolean` for CHECK constraints |
 
 ## Zod Schema Generation
 
@@ -158,6 +159,21 @@ export interface DB {
 - Multi-schema support (default: `dbo`)
 - All MSSQL types: `uniqueidentifier`, `datetime2`, `datetimeoffset`, `money`, `xml`, `varbinary`, etc.
 - Both URL (`mssql://`) and ADO.NET connection string formats
+
+### Boolean Coercion (SQLite/MSSQL)
+
+SQLite and MSSQL store booleans as integers (0/1). When a `CHECK(col IN (0, 1))` constraint is detected, kysely-gen generates:
+
+**TypeScript:** `boolean`
+**Zod:** `z.union([z.literal(0), z.literal(1)]).transform(v => v === 1)`
+
+The Zod transform coerces the raw 0/1 from the database to `true`/`false`, ensuring runtime validation passes.
+
+Use `--no-boolean-coerce` to output raw `0 | 1` instead:
+
+```sh
+kysely-gen --zod --no-boolean-coerce
+```
 
 ## Type Mappings
 
