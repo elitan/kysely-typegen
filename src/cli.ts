@@ -9,6 +9,8 @@ import { serialize } from '@/ast/serialize';
 import { transformDatabase } from '@/transform';
 import { getDialect, detectDialect } from '@/dialects';
 import type { DialectName } from '@/dialects/types';
+import { transformDatabaseToZod } from '@/zod/transform';
+import { serializeZod } from '@/zod/serialize';
 
 const program = new Command();
 
@@ -25,6 +27,7 @@ program
   .option('--exclude-pattern <pattern>', 'Exclude tables matching glob pattern (schema.table format)', collect, [])
   .option('--print', 'Output to stdout instead of writing to file')
   .option('--verify', 'Verify types match existing file (exit 1 if different)')
+  .option('--zod', 'Generate Zod schemas with inferred types instead of TypeScript interfaces')
   .action(async (options) => {
     try {
       await generate(options);
@@ -55,6 +58,7 @@ async function generate(options: {
   excludePattern: string[];
   print?: boolean;
   verify?: boolean;
+  zod?: boolean;
 }) {
   const printMode = options.print === true;
   const log = printMode
@@ -95,7 +99,8 @@ async function generate(options: {
   }
 
   const dialect = getDialect(dialectName);
-  const outputPath = options.out;
+  const defaultOutputPath = options.zod ? './db-schemas.ts' : './db.d.ts';
+  const outputPath = options.out === './db.d.ts' && options.zod ? defaultOutputPath : options.out;
   const defaultSchema = dialectName === 'sqlite' ? 'main' : dialectName === 'mssql' ? 'dbo' : 'public';
   const schemas = options.schema.length > 0 ? options.schema : [defaultSchema];
 
@@ -140,14 +145,26 @@ async function generate(options: {
   spinner.succeed(`Found ${chalk.bold(tableCount)} tables and ${chalk.bold(enumCount)} enums`);
 
   // Transform and generate
-  spinner.start('Generating TypeScript types...');
-  const { program: astProgram, warnings } = transformDatabase(metadata, {
-    dialectName,
-    camelCase: options.camelCase,
-    includePattern: options.includePattern.length > 0 ? options.includePattern : undefined,
-    excludePattern: options.excludePattern.length > 0 ? options.excludePattern : undefined,
-  });
-  const code = serialize(astProgram);
+  let code: string;
+  let warnings: { pgType: string }[] = [];
+
+  if (options.zod) {
+    spinner.start('Generating Zod schemas...');
+    const zodProgram = transformDatabaseToZod(metadata, {
+      camelCase: options.camelCase,
+    });
+    code = serializeZod(zodProgram);
+  } else {
+    spinner.start('Generating TypeScript types...');
+    const { program: astProgram, warnings: tsWarnings } = transformDatabase(metadata, {
+      dialectName,
+      camelCase: options.camelCase,
+      includePattern: options.includePattern.length > 0 ? options.includePattern : undefined,
+      excludePattern: options.excludePattern.length > 0 ? options.excludePattern : undefined,
+    });
+    code = serialize(astProgram);
+    warnings = tsWarnings;
+  }
 
   if (options.verify) {
     const absolutePath = resolve(outputPath);
@@ -173,13 +190,14 @@ async function generate(options: {
     process.exit(1);
   }
 
+  const outputLabel = options.zod ? 'Zod schemas' : 'Types';
   if (printMode) {
-    spinner.succeed('Types generated');
+    spinner.succeed(`${outputLabel} generated`);
     process.stdout.write(code);
   } else {
     const absolutePath = resolve(outputPath);
     await writeFile(absolutePath, code, 'utf-8');
-    spinner.succeed(`Types written to ${chalk.cyan(absolutePath)}`);
+    spinner.succeed(`${outputLabel} written to ${chalk.cyan(absolutePath)}`);
   }
 
   // Show warnings
