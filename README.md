@@ -165,9 +165,7 @@ export interface DB {
 SQLite and MSSQL store booleans as integers (0/1). When a `CHECK(col IN (0, 1))` constraint is detected, kysely-gen generates:
 
 **TypeScript:** `boolean`
-**Zod:** `z.union([z.literal(0), z.literal(1)]).transform(v => v === 1)`
-
-The Zod transform coerces the raw 0/1 from the database to `true`/`false`, ensuring runtime validation passes.
+**Zod:** `z.coerce.boolean()`
 
 Use `--no-boolean-coerce` to output raw `0 | 1` instead:
 
