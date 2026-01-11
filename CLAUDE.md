@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-kysely-gen is a **PostgreSQL → TypeScript type generator** for Kysely, built with Bun using Test-Driven Development principles. It generates type-safe Kysely database types by introspecting live databases.
+kysely-gen is a **Database → TypeScript type generator** for Kysely, built with Bun using Test-Driven Development principles. It generates type-safe Kysely database types by introspecting live databases.
 
-**Core Pipeline:** `PostgreSQL → Introspect → Metadata → Transform → AST → Serialize → TypeScript`
+**Supported databases:** PostgreSQL, SQLite, MySQL, MSSQL
+
+**Core Pipeline:** `Database → Introspect → Metadata → Transform → AST → Serialize → TypeScript`
 
 ## Development Commands
 
@@ -103,6 +105,15 @@ This project uses strict TDD:
 2. Implement minimal code to pass (GREEN)
 3. Refactor (REFACTOR)
 4. Use `bun test --watch` continuously
+
+### Testing Strategy
+
+PostgreSQL uses **snapshot tests** (`test/integration.test.ts`) to test the shared Transform → Serialize pipeline. Other databases use **explicit assertions** to test dialect-specific introspection only. Don't add snapshots to other databases - PostgreSQL covers the shared code.
+
+```bash
+bun test                  # All tests (MSSQL skipped without Docker)
+TEST_MSSQL=1 bun test     # Include MSSQL tests
+```
 
 ### Type Safety
 

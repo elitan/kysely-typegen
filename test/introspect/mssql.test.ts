@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { Kysely, MssqlDialect } from 'kysely';
 import { introspectMssql } from '@/dialects/mssql/introspect';
+import { transformDatabaseToZod } from '@/zod/transform';
+import { serializeZod } from '@/zod/serialize';
 
 const SKIP_MSSQL_TESTS = !process.env.TEST_MSSQL;
 
@@ -237,5 +239,89 @@ describe.skipIf(SKIP_MSSQL_TESTS)('MSSQL Introspector', () => {
     expect(totalPriceColumn).toBeDefined();
     expect(totalPriceColumn?.isAutoIncrement).toBe(true);
     expect(totalPriceColumn?.hasDefaultValue).toBe(true);
+  });
+
+  test('should parse CHECK constraints with IN pattern', async () => {
+    const metadata = await introspectMssql(db, { schemas: ['dbo'] });
+
+    const posts = metadata.tables.find((t) => t.name === 'posts');
+    expect(posts).toBeDefined();
+
+    const statusColumn = posts?.columns.find((c) => c.name === 'status');
+    expect(statusColumn).toBeDefined();
+    expect(statusColumn?.checkConstraint?.type).toBe('string');
+    expect(statusColumn?.checkConstraint?.values).toHaveLength(3);
+    expect(statusColumn?.checkConstraint?.values).toContain('draft');
+    expect(statusColumn?.checkConstraint?.values).toContain('published');
+    expect(statusColumn?.checkConstraint?.values).toContain('archived');
+  });
+
+  test('should parse CHECK constraints on different tables', async () => {
+    const metadata = await introspectMssql(db, { schemas: ['dbo'] });
+
+    const comments = metadata.tables.find((t) => t.name === 'comments');
+    expect(comments).toBeDefined();
+
+    const statusColumn = comments?.columns.find((c) => c.name === 'status');
+    expect(statusColumn).toBeDefined();
+    expect(statusColumn?.checkConstraint?.type).toBe('string');
+    expect(statusColumn?.checkConstraint?.values).toHaveLength(3);
+    expect(statusColumn?.checkConstraint?.values).toContain('pending');
+    expect(statusColumn?.checkConstraint?.values).toContain('approved');
+    expect(statusColumn?.checkConstraint?.values).toContain('rejected');
+  });
+
+  test('should parse CHECK constraints from different schemas', async () => {
+    const metadata = await introspectMssql(db, { schemas: ['dbo', 'test_schema'] });
+
+    const tasks = metadata.tables.find(
+      (t) => t.schema === 'test_schema' && t.name === 'tasks'
+    );
+    expect(tasks).toBeDefined();
+
+    const priorityColumn = tasks?.columns.find((c) => c.name === 'priority');
+    expect(priorityColumn).toBeDefined();
+    expect(priorityColumn?.checkConstraint?.type).toBe('string');
+    expect(priorityColumn?.checkConstraint?.values).toHaveLength(3);
+    expect(priorityColumn?.checkConstraint?.values).toContain('low');
+    expect(priorityColumn?.checkConstraint?.values).toContain('medium');
+    expect(priorityColumn?.checkConstraint?.values).toContain('high');
+  });
+
+  test('columns without CHECK constraints should not have checkConstraint property', async () => {
+    const metadata = await introspectMssql(db, { schemas: ['dbo'] });
+
+    const users = metadata.tables.find((t) => t.name === 'users');
+    expect(users).toBeDefined();
+
+    const emailColumn = users?.columns.find((c) => c.name === 'email');
+    expect(emailColumn).toBeDefined();
+    expect(emailColumn?.checkConstraint).toBeUndefined();
+  });
+
+  test('e2e: CHECK constraints should generate Zod enums', async () => {
+    const metadata = await introspectMssql(db, { schemas: ['dbo'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("import { z } from 'zod';");
+    expect(output).toContain('z.enum([');
+    expect(output).toContain("'draft'");
+    expect(output).toContain("'published'");
+    expect(output).toContain("'archived'");
+  });
+
+  test('e2e: CHECK constraints from multiple tables should generate correct Zod enums', async () => {
+    const metadata = await introspectMssql(db, { schemas: ['dbo', 'test_schema'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("'pending'");
+    expect(output).toContain("'approved'");
+    expect(output).toContain("'rejected'");
+
+    expect(output).toContain("'low'");
+    expect(output).toContain("'medium'");
+    expect(output).toContain("'high'");
   });
 });

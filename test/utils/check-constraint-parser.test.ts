@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   parseCheckConstraint,
+  parseMssqlCheckConstraint,
   parseSqliteCheckConstraint,
 } from '@/utils/check-constraint-parser';
 
@@ -290,6 +291,142 @@ describe('parseSqliteCheckConstraint', () => {
 
     test('returns null for empty input', () => {
       const result = parseSqliteCheckConstraint('');
+      expect(result).toBeNull();
+    });
+  });
+});
+
+describe('parseMssqlCheckConstraint', () => {
+  describe('IN string patterns', () => {
+    test('parses IN with string values', () => {
+      const result = parseMssqlCheckConstraint(
+        "([status] IN ('draft', 'published', 'archived'))"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ['draft', 'published', 'archived'],
+      });
+    });
+
+    test('parses IN with two values', () => {
+      const result = parseMssqlCheckConstraint(
+        "([type] IN ('proxy', 'redirect'))"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ['proxy', 'redirect'],
+      });
+    });
+
+    test('handles escaped quotes', () => {
+      const result = parseMssqlCheckConstraint(
+        "([val] IN ('it''s', 'won''t'))"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ["it's", "won't"],
+      });
+    });
+
+    test('handles values with spaces', () => {
+      const result = parseMssqlCheckConstraint(
+        "([status] IN ('in progress', 'on hold'))"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ['in progress', 'on hold'],
+      });
+    });
+  });
+
+  describe('IN numeric patterns', () => {
+    test('parses IN with integer values', () => {
+      const result = parseMssqlCheckConstraint('([level] IN (1, 2, 3, 4, 5))');
+      expect(result).toEqual({
+        type: 'number',
+        values: [1, 2, 3, 4, 5],
+      });
+    });
+
+    test('parses negative integers', () => {
+      const result = parseMssqlCheckConstraint('([val] IN (-1, 0, 1))');
+      expect(result).toEqual({
+        type: 'number',
+        values: [-1, 0, 1],
+      });
+    });
+  });
+
+  describe('boolean detection', () => {
+    test('detects boolean pattern (0, 1)', () => {
+      const result = parseMssqlCheckConstraint('([is_enabled] IN (0, 1))');
+      expect(result).toEqual({ type: 'boolean' });
+    });
+
+    test('detects boolean pattern (1, 0) - reversed order', () => {
+      const result = parseMssqlCheckConstraint('([is_active] IN (1, 0))');
+      expect(result).toEqual({ type: 'boolean' });
+    });
+
+    test('does NOT detect boolean for (0, 1, 2)', () => {
+      const result = parseMssqlCheckConstraint('([level] IN (0, 1, 2))');
+      expect(result).toEqual({
+        type: 'number',
+        values: [0, 1, 2],
+      });
+    });
+  });
+
+  describe('OR chain patterns', () => {
+    test('parses OR chain with string values', () => {
+      const result = parseMssqlCheckConstraint(
+        "([priority]='low' OR [priority]='medium' OR [priority]='high')"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ['low', 'medium', 'high'],
+      });
+    });
+
+    test('parses OR chain with two values', () => {
+      const result = parseMssqlCheckConstraint(
+        "([status]='yes' OR [status]='no')"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ['yes', 'no'],
+      });
+    });
+
+    test('handles escaped quotes in OR chain', () => {
+      const result = parseMssqlCheckConstraint(
+        "([val]='it''s' OR [val]='won''t')"
+      );
+      expect(result).toEqual({
+        type: 'string',
+        values: ["it's", "won't"],
+      });
+    });
+  });
+
+  describe('non-enum patterns', () => {
+    test('returns null for range check', () => {
+      const result = parseMssqlCheckConstraint('([value]>=(0))');
+      expect(result).toBeNull();
+    });
+
+    test('returns null for LIKE check', () => {
+      const result = parseMssqlCheckConstraint("([col] LIKE '%pattern%')");
+      expect(result).toBeNull();
+    });
+
+    test('returns null for empty input', () => {
+      const result = parseMssqlCheckConstraint('');
+      expect(result).toBeNull();
+    });
+
+    test('returns null for multi-column check', () => {
+      const result = parseMssqlCheckConstraint('([start_time]<[end_time])');
       expect(result).toBeNull();
     });
   });

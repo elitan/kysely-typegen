@@ -132,3 +132,54 @@ function isBooleanPattern(values: number[]): boolean {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[0] === 0 && sorted[1] === 1;
 }
+
+const MSSQL_IN_REGEX = /\[\w+\]\s+IN\s*\(([^)]+)\)/i;
+const MSSQL_OR_REGEX = /\[\w+\]='([^']+)'/g;
+
+export function parseMssqlCheckConstraint(
+  definition: string
+): ParsedCheckConstraint | null {
+  if (!definition || definition.trim() === '') return null;
+
+  const inMatch = definition.match(MSSQL_IN_REGEX);
+  if (inMatch) {
+    const valuesPart = inMatch[1];
+    if (!valuesPart || valuesPart.trim() === '') return null;
+
+    const numericValues = parseNumericArray(valuesPart);
+    if (numericValues !== null) {
+      if (isBooleanPattern(numericValues)) {
+        return { type: 'boolean' };
+      }
+      return { type: 'number', values: numericValues };
+    }
+
+    const stringValues = parseStringArray(valuesPart);
+    if (stringValues !== null && stringValues.length > 0) {
+      return { type: 'string', values: stringValues };
+    }
+  }
+
+  if (definition.includes(' OR ')) {
+    const values = parseMssqlOrChain(definition);
+    if (values !== null && values.length > 0) {
+      return { type: 'string', values };
+    }
+  }
+
+  return null;
+}
+
+function parseMssqlOrChain(definition: string): string[] | null {
+  const values: string[] = [];
+  let match;
+
+  const regex = /\[\w+\]='((?:[^']|'')*)'/g;
+  while ((match = regex.exec(definition)) !== null) {
+    let value = match[1];
+    value = value.replace(/''/g, "'");
+    values.push(value);
+  }
+
+  return values.length > 0 ? values : null;
+}
