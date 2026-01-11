@@ -183,3 +183,57 @@ function parseMssqlOrChain(definition: string): string[] | null {
 
   return values.length > 0 ? values : null;
 }
+
+export type MysqlCheckConstraintResult = {
+  columnName: string;
+  constraint: ParsedCheckConstraint;
+};
+
+const MYSQL_IN_REGEX = /^[\s(]*`?(\w+)`?\s+IN\s*\(([^)]+)\)/i;
+
+export function parseMysqlCheckConstraint(
+  definition: string
+): MysqlCheckConstraintResult | null {
+  if (!definition || definition.trim() === '') return null;
+
+  const match = definition.match(MYSQL_IN_REGEX);
+  if (!match) return null;
+
+  const columnName = match[1];
+  const valuesPart = match[2];
+
+  if (!valuesPart || valuesPart.trim() === '') return null;
+
+  const numericValues = parseNumericArray(valuesPart);
+  if (numericValues !== null) {
+    if (isBooleanPattern(numericValues)) {
+      return { columnName, constraint: { type: 'boolean' } };
+    }
+    return { columnName, constraint: { type: 'number', values: numericValues } };
+  }
+
+  const stringValues = parseMysqlStringArray(valuesPart);
+  if (stringValues !== null && stringValues.length > 0) {
+    return { columnName, constraint: { type: 'string', values: stringValues } };
+  }
+
+  return null;
+}
+
+function parseMysqlStringArray(arrayContent: string): string[] | null {
+  const values: string[] = [];
+
+  const mysqlValueRegex = /_\w+\\'([^'\\]*)\\'/g;
+  let match;
+  while ((match = mysqlValueRegex.exec(arrayContent)) !== null) {
+    let value = match[1];
+    value = value.replace(/''/g, "'");
+    values.push(value);
+  }
+
+  if (values.length > 0) {
+    return values;
+  }
+
+  return parseStringArray(arrayContent);
+}

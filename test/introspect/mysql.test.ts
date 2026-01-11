@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { Kysely, MysqlDialect } from 'kysely';
 import { createPool } from 'mysql2';
 import { introspectMysql } from '@/dialects/mysql/introspect';
+import { transformDatabaseToZod } from '@/zod/transform';
+import { serializeZod } from '@/zod/serialize';
 
 const TEST_DATABASE_URL = 'mysql://test_user:test_password@localhost:3307/test_db';
 
@@ -206,5 +208,80 @@ describe('MySQL Introspector', () => {
 
     const priorityEnum = testSchemaEnums.find((e) => e.name === 'tasks_priority_enum');
     expect(priorityEnum?.values).toEqual(['low', 'medium', 'high']);
+  });
+
+  test('should parse CHECK constraints with IN pattern', async () => {
+    const metadata = await introspectMysql(db, { schemas: ['test_db'] });
+
+    const checkTest = metadata.tables.find((t) => t.name === 'check_test');
+    expect(checkTest).toBeDefined();
+
+    const statusColumn = checkTest?.columns.find((c) => c.name === 'status');
+    expect(statusColumn).toBeDefined();
+    expect(statusColumn?.checkConstraint?.type).toBe('string');
+    expect(statusColumn?.checkConstraint?.values).toHaveLength(3);
+    expect(statusColumn?.checkConstraint?.values).toContain('active');
+    expect(statusColumn?.checkConstraint?.values).toContain('inactive');
+    expect(statusColumn?.checkConstraint?.values).toContain('pending');
+  });
+
+  test('should parse CHECK constraints with boolean pattern', async () => {
+    const metadata = await introspectMysql(db, { schemas: ['test_db'] });
+
+    const checkTest = metadata.tables.find((t) => t.name === 'check_test');
+    const verifiedColumn = checkTest?.columns.find((c) => c.name === 'is_verified');
+
+    expect(verifiedColumn).toBeDefined();
+    expect(verifiedColumn?.checkConstraint?.type).toBe('boolean');
+  });
+
+  test('should parse CHECK constraints from different schemas', async () => {
+    const metadata = await introspectMysql(db, { schemas: ['test_db', 'test_schema'] });
+
+    const checkTasks = metadata.tables.find(
+      (t) => t.schema === 'test_schema' && t.name === 'check_tasks'
+    );
+    expect(checkTasks).toBeDefined();
+
+    const levelColumn = checkTasks?.columns.find((c) => c.name === 'level');
+    expect(levelColumn).toBeDefined();
+    expect(levelColumn?.checkConstraint?.type).toBe('string');
+    expect(levelColumn?.checkConstraint?.values).toHaveLength(3);
+    expect(levelColumn?.checkConstraint?.values).toContain('beginner');
+    expect(levelColumn?.checkConstraint?.values).toContain('intermediate');
+    expect(levelColumn?.checkConstraint?.values).toContain('advanced');
+  });
+
+  test('columns without CHECK constraints should not have checkConstraint property', async () => {
+    const metadata = await introspectMysql(db, { schemas: ['test_db'] });
+
+    const users = metadata.tables.find((t) => t.name === 'users');
+    expect(users).toBeDefined();
+
+    const emailColumn = users?.columns.find((c) => c.name === 'email');
+    expect(emailColumn).toBeDefined();
+    expect(emailColumn?.checkConstraint).toBeUndefined();
+  });
+
+  test('e2e: CHECK constraints should generate Zod enums', async () => {
+    const metadata = await introspectMysql(db, { schemas: ['test_db'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("import { z } from 'zod';");
+    expect(output).toContain('z.enum([');
+    expect(output).toContain("'active'");
+    expect(output).toContain("'inactive'");
+    expect(output).toContain("'pending'");
+  });
+
+  test('e2e: CHECK constraints from multiple tables should generate correct Zod enums', async () => {
+    const metadata = await introspectMysql(db, { schemas: ['test_db', 'test_schema'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("'beginner'");
+    expect(output).toContain("'intermediate'");
+    expect(output).toContain("'advanced'");
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   parseCheckConstraint,
   parseMssqlCheckConstraint,
+  parseMysqlCheckConstraint,
   parseSqliteCheckConstraint,
 } from '@/utils/check-constraint-parser';
 
@@ -427,6 +428,146 @@ describe('parseMssqlCheckConstraint', () => {
 
     test('returns null for multi-column check', () => {
       const result = parseMssqlCheckConstraint('([start_time]<[end_time])');
+      expect(result).toBeNull();
+    });
+  });
+});
+
+describe('parseMysqlCheckConstraint', () => {
+  describe('IN string patterns', () => {
+    test('parses IN with string values (backtick-quoted column)', () => {
+      const result = parseMysqlCheckConstraint(
+        "`status` IN ('draft', 'published', 'archived')"
+      );
+      expect(result).toEqual({
+        columnName: 'status',
+        constraint: { type: 'string', values: ['draft', 'published', 'archived'] },
+      });
+    });
+
+    test('parses IN with string values (unquoted column)', () => {
+      const result = parseMysqlCheckConstraint(
+        "status IN ('draft', 'published', 'archived')"
+      );
+      expect(result).toEqual({
+        columnName: 'status',
+        constraint: { type: 'string', values: ['draft', 'published', 'archived'] },
+      });
+    });
+
+    test('parses MySQL charset-prefixed format from CHECK_CLAUSE', () => {
+      const result = parseMysqlCheckConstraint(
+        "(`status` in (_latin1\\'active\\',_latin1\\'inactive\\',_latin1\\'pending\\'))"
+      );
+      expect(result).toEqual({
+        columnName: 'status',
+        constraint: { type: 'string', values: ['active', 'inactive', 'pending'] },
+      });
+    });
+
+    test('parses IN with two values', () => {
+      const result = parseMysqlCheckConstraint(
+        "`type` in ('proxy', 'redirect')"
+      );
+      expect(result).toEqual({
+        columnName: 'type',
+        constraint: { type: 'string', values: ['proxy', 'redirect'] },
+      });
+    });
+
+    test('handles escaped quotes', () => {
+      const result = parseMysqlCheckConstraint(
+        "`val` IN ('it''s', 'won''t')"
+      );
+      expect(result).toEqual({
+        columnName: 'val',
+        constraint: { type: 'string', values: ["it's", "won't"] },
+      });
+    });
+
+    test('handles values with spaces', () => {
+      const result = parseMysqlCheckConstraint(
+        "`status` IN ('in progress', 'on hold')"
+      );
+      expect(result).toEqual({
+        columnName: 'status',
+        constraint: { type: 'string', values: ['in progress', 'on hold'] },
+      });
+    });
+
+    test('handles wrapped in parentheses', () => {
+      const result = parseMysqlCheckConstraint(
+        "(`status` in ('active', 'inactive'))"
+      );
+      expect(result).toEqual({
+        columnName: 'status',
+        constraint: { type: 'string', values: ['active', 'inactive'] },
+      });
+    });
+  });
+
+  describe('IN numeric patterns', () => {
+    test('parses IN with integer values', () => {
+      const result = parseMysqlCheckConstraint('`level` IN (1, 2, 3, 4, 5)');
+      expect(result).toEqual({
+        columnName: 'level',
+        constraint: { type: 'number', values: [1, 2, 3, 4, 5] },
+      });
+    });
+
+    test('parses negative integers', () => {
+      const result = parseMysqlCheckConstraint('val IN (-1, 0, 1)');
+      expect(result).toEqual({
+        columnName: 'val',
+        constraint: { type: 'number', values: [-1, 0, 1] },
+      });
+    });
+  });
+
+  describe('boolean detection', () => {
+    test('detects boolean pattern (0, 1)', () => {
+      const result = parseMysqlCheckConstraint('`is_enabled` IN (0, 1)');
+      expect(result).toEqual({
+        columnName: 'is_enabled',
+        constraint: { type: 'boolean' },
+      });
+    });
+
+    test('detects boolean pattern (1, 0) - reversed order', () => {
+      const result = parseMysqlCheckConstraint('is_active IN (1, 0)');
+      expect(result).toEqual({
+        columnName: 'is_active',
+        constraint: { type: 'boolean' },
+      });
+    });
+
+    test('does NOT detect boolean for (0, 1, 2)', () => {
+      const result = parseMysqlCheckConstraint('`level` IN (0, 1, 2)');
+      expect(result).toEqual({
+        columnName: 'level',
+        constraint: { type: 'number', values: [0, 1, 2] },
+      });
+    });
+  });
+
+  describe('non-enum patterns', () => {
+    test('returns null for range check', () => {
+      const result = parseMysqlCheckConstraint('`value` >= 0');
+      expect(result).toBeNull();
+    });
+
+    test('returns null for LIKE check', () => {
+      const result = parseMysqlCheckConstraint("`col` LIKE '%pattern%'");
+      expect(result).toBeNull();
+    });
+
+    test('returns null for empty input', () => {
+      const result = parseMysqlCheckConstraint('');
+      expect(result).toBeNull();
+    });
+
+    test('returns null for multi-column check', () => {
+      const result = parseMysqlCheckConstraint('`start_time` < `end_time`');
       expect(result).toBeNull();
     });
   });
