@@ -262,7 +262,7 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
     const code = serializeZod(program);
 
-    expect(code).toContain('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1)');
+    expect(code).toContain('z.coerce.boolean()');
   });
 
   test('should generate union without transform when noBooleanCoerce is true', () => {
@@ -292,7 +292,7 @@ describe('transformDatabaseToZod', () => {
     expect(code).not.toContain('.transform(v => v === 1)');
   });
 
-  test('should handle nullable boolean CHECK constraints with transform', () => {
+  test('should handle nullable boolean CHECK constraints', () => {
     const metadata: DatabaseMetadata = {
       tables: [
         {
@@ -315,6 +315,6 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
     const code = serializeZod(program);
 
-    expect(code).toContain('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1).nullable()');
+    expect(code).toContain('z.coerce.boolean().nullable()');
   });
 });

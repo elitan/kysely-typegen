@@ -50,6 +50,11 @@ export type ZodTransformNode = {
   transformFn: string;
 };
 
+export type ZodCoerceNode = {
+  kind: 'zod-coerce';
+  method: 'boolean' | 'string' | 'number' | 'bigint' | 'date';
+};
+
 export type ZodPropertyNode = {
   name: string;
   schema: ZodSchemaNode;
@@ -65,7 +70,8 @@ export type ZodSchemaNode =
   | ZodModifiedNode
   | ZodReferenceNode
   | ZodCustomNode
-  | ZodTransformNode;
+  | ZodTransformNode
+  | ZodCoerceNode;
 
 export type ZodSchemaDeclaration = {
   kind: 'zod-schema-declaration';

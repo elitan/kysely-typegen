@@ -276,12 +276,12 @@ describe('SQLite Introspector', () => {
     expect(output).toContain("'archived'");
   });
 
-  test('e2e: CHECK constraints with boolean pattern should generate transform to boolean', async () => {
+  test('e2e: CHECK constraints with boolean pattern should generate z.coerce.boolean()', async () => {
     const metadata = await introspectSqlite(db, { schemas: ['main'] });
     const zodProgram = transformDatabaseToZod(metadata);
     const output = serializeZod(zodProgram);
 
-    expect(output).toContain('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1)');
+    expect(output).toContain('z.coerce.boolean()');
   });
 
   test('e2e: CHECK constraints with boolean pattern and noBooleanCoerce should generate union', async () => {
