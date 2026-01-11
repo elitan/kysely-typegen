@@ -13,6 +13,7 @@ import type {
   ZodReferenceNode,
   ZodSchemaDeclaration,
   ZodSchemaNode,
+  ZodTransformNode,
   ZodUnionNode,
 } from './nodes';
 
@@ -66,6 +67,8 @@ export function serializeZodSchema(node: ZodSchemaNode): string {
       return serializeZodReference(node);
     case 'zod-custom':
       return serializeZodCustom(node);
+    case 'zod-transform':
+      return serializeZodTransform(node);
   }
 }
 
@@ -121,6 +124,10 @@ function serializeZodReference(node: ZodReferenceNode): string {
 
 function serializeZodCustom(node: ZodCustomNode): string {
   return `z.custom<${node.typeReference}>()`;
+}
+
+function serializeZodTransform(node: ZodTransformNode): string {
+  return `${serializeZodSchema(node.schema)}.transform(${node.transformFn})`;
 }
 
 function serializeZodDeclaration(node: ZodDeclarationNode): string {

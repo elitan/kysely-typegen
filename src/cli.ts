@@ -28,6 +28,7 @@ program
   .option('--print', 'Output to stdout instead of writing to file')
   .option('--verify', 'Verify types match existing file (exit 1 if different)')
   .option('--zod', 'Generate Zod schemas with inferred types instead of TypeScript interfaces')
+  .option('--no-boolean-coerce', 'Output 0 | 1 instead of coercing to boolean for CHECK(col IN (0, 1))')
   .action(async (options) => {
     try {
       await generate(options);
@@ -59,6 +60,7 @@ async function generate(options: {
   print?: boolean;
   verify?: boolean;
   zod?: boolean;
+  booleanCoerce?: boolean;
 }) {
   const printMode = options.print === true;
   const log = printMode
@@ -148,10 +150,13 @@ async function generate(options: {
   let code: string;
   let warnings: { pgType: string }[] = [];
 
+  const noBooleanCoerce = options.booleanCoerce === false;
+
   if (options.zod) {
     spinner.start('Generating Zod schemas...');
     const zodProgram = transformDatabaseToZod(metadata, {
       camelCase: options.camelCase,
+      noBooleanCoerce,
     });
     code = serializeZod(zodProgram);
   } else {
@@ -161,6 +166,7 @@ async function generate(options: {
       camelCase: options.camelCase,
       includePattern: options.includePattern.length > 0 ? options.includePattern : undefined,
       excludePattern: options.excludePattern.length > 0 ? options.excludePattern : undefined,
+      noBooleanCoerce,
     });
     code = serialize(astProgram);
     warnings = tsWarnings;

@@ -44,6 +44,12 @@ export type ZodCustomNode = {
   typeReference: string;
 };
 
+export type ZodTransformNode = {
+  kind: 'zod-transform';
+  schema: ZodSchemaNode;
+  transformFn: string;
+};
+
 export type ZodPropertyNode = {
   name: string;
   schema: ZodSchemaNode;
@@ -58,7 +64,8 @@ export type ZodSchemaNode =
   | ZodObjectNode
   | ZodModifiedNode
   | ZodReferenceNode
-  | ZodCustomNode;
+  | ZodCustomNode
+  | ZodTransformNode;
 
 export type ZodSchemaDeclaration = {
   kind: 'zod-schema-declaration';

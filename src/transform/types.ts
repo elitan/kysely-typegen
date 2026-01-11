@@ -12,6 +12,7 @@ export type TransformOptions = {
   excludePattern?: string[];
   dialectName?: DialectName;
   mapType?: TypeMapper;
+  noBooleanCoerce?: boolean;
 };
 
 export type TransformWarning = {

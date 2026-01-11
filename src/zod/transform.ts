@@ -14,6 +14,7 @@ import { EnumNameResolver } from '@/transform/enum';
 
 export type ZodTransformOptions = {
   camelCase?: boolean;
+  noBooleanCoerce?: boolean;
 };
 
 function uncapitalize(str: string): string {
@@ -86,7 +87,23 @@ function transformColumnToZod(
     }
   } else if (column.checkConstraint) {
     if (column.checkConstraint.type === 'boolean') {
-      schema = { kind: 'zod-primitive', method: 'boolean' };
+      const unionSchema: ZodSchemaNode = {
+        kind: 'zod-union',
+        schemas: [
+          { kind: 'zod-literal', value: 0 },
+          { kind: 'zod-literal', value: 1 },
+        ],
+      };
+
+      if (options?.noBooleanCoerce) {
+        schema = unionSchema;
+      } else {
+        schema = {
+          kind: 'zod-transform',
+          schema: unionSchema,
+          transformFn: 'v => v === 1',
+        };
+      }
     } else if (column.checkConstraint.type === 'string') {
       schema = { kind: 'zod-enum', values: column.checkConstraint.values };
     } else {
