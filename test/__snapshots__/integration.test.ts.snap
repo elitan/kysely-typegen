@@ -99,3 +99,277 @@ export interface DB {
 }
 "
 `;
+
+exports[`Integration: Full pipeline should generate Zod schemas from database 1`] = `
+"import { z } from 'zod';
+
+export const statusEnumSchema = z.enum(['pending', 'approved', 'rejected']);
+
+export const commentSchema = z.object({
+  id: z.number(),
+  post_id: z.number(),
+  user_id: z.number(),
+  content: z.string(),
+  status: statusEnumSchema,
+  created_at: z.date(),
+});
+
+export const newCommentSchema = z.object({
+  id: z.number().optional(),
+  post_id: z.number(),
+  user_id: z.number(),
+  content: z.string(),
+  status: statusEnumSchema.optional(),
+  created_at: z.union([z.date(), z.string()]).optional(),
+});
+
+export const commentUpdateSchema = z.object({
+  id: z.number().optional(),
+  post_id: z.number().optional(),
+  user_id: z.number().optional(),
+  content: z.string().optional(),
+  status: statusEnumSchema.optional(),
+  created_at: z.union([z.date(), z.string()]).optional(),
+});
+
+export type Comment = z.infer<typeof commentSchema>;
+
+export type NewComment = z.infer<typeof newCommentSchema>;
+
+export type CommentUpdate = z.infer<typeof commentUpdateSchema>;
+
+export const measurementSchema = z.object({
+  id: z.number(),
+  measure_date: z.date(),
+  value: z.string(),
+  sensor_id: z.number(),
+});
+
+export const newMeasurementSchema = z.object({
+  id: z.number().optional(),
+  measure_date: z.union([z.date(), z.string()]),
+  value: z.union([z.string(), z.number()]),
+  sensor_id: z.number(),
+});
+
+export const measurementUpdateSchema = z.object({
+  id: z.number().optional(),
+  measure_date: z.union([z.date(), z.string()]).optional(),
+  value: z.union([z.string(), z.number()]).optional(),
+  sensor_id: z.number().optional(),
+});
+
+export type Measurement = z.infer<typeof measurementSchema>;
+
+export type NewMeasurement = z.infer<typeof newMeasurementSchema>;
+
+export type MeasurementUpdate = z.infer<typeof measurementUpdateSchema>;
+
+export const measurements2024Q1Schema = z.object({
+  id: z.number(),
+  measure_date: z.date(),
+  value: z.string(),
+  sensor_id: z.number(),
+});
+
+export const newMeasurements2024Q1Schema = z.object({
+  id: z.number().optional(),
+  measure_date: z.union([z.date(), z.string()]),
+  value: z.union([z.string(), z.number()]),
+  sensor_id: z.number(),
+});
+
+export const measurements2024Q1UpdateSchema = z.object({
+  id: z.number().optional(),
+  measure_date: z.union([z.date(), z.string()]).optional(),
+  value: z.union([z.string(), z.number()]).optional(),
+  sensor_id: z.number().optional(),
+});
+
+export type Measurements2024Q1 = z.infer<typeof measurements2024Q1Schema>;
+
+export type NewMeasurements2024Q1 = z.infer<typeof newMeasurements2024Q1Schema>;
+
+export type Measurements2024Q1Update = z.infer<typeof measurements2024Q1UpdateSchema>;
+
+export const measurements2024Q2Schema = z.object({
+  id: z.number(),
+  measure_date: z.date(),
+  value: z.string(),
+  sensor_id: z.number(),
+});
+
+export const newMeasurements2024Q2Schema = z.object({
+  id: z.number().optional(),
+  measure_date: z.union([z.date(), z.string()]),
+  value: z.union([z.string(), z.number()]),
+  sensor_id: z.number(),
+});
+
+export const measurements2024Q2UpdateSchema = z.object({
+  id: z.number().optional(),
+  measure_date: z.union([z.date(), z.string()]).optional(),
+  value: z.union([z.string(), z.number()]).optional(),
+  sensor_id: z.number().optional(),
+});
+
+export type Measurements2024Q2 = z.infer<typeof measurements2024Q2Schema>;
+
+export type NewMeasurements2024Q2 = z.infer<typeof newMeasurements2024Q2Schema>;
+
+export type Measurements2024Q2Update = z.infer<typeof measurements2024Q2UpdateSchema>;
+
+export const postSchema = z.object({
+  id: z.number(),
+  user_id: z.number(),
+  title: z.string(),
+  content: z.string().nullable(),
+  published_at: z.date().nullable(),
+  view_count: z.number(),
+});
+
+export const newPostSchema = z.object({
+  id: z.number().optional(),
+  user_id: z.number(),
+  title: z.string(),
+  content: z.string().nullable(),
+  published_at: z.union([z.date(), z.string()]).nullable(),
+  view_count: z.number().optional(),
+});
+
+export const postUpdateSchema = z.object({
+  id: z.number().optional(),
+  user_id: z.number().optional(),
+  title: z.string().optional(),
+  content: z.string().nullable().optional(),
+  published_at: z.union([z.date(), z.string()]).nullable().optional(),
+  view_count: z.number().optional(),
+});
+
+export type Post = z.infer<typeof postSchema>;
+
+export type NewPost = z.infer<typeof newPostSchema>;
+
+export type PostUpdate = z.infer<typeof postUpdateSchema>;
+
+export const userSchema = z.object({
+  id: z.number(),
+  email: z.string(),
+  username: z.string(),
+  created_at: z.date(),
+  updated_at: z.date().nullable(),
+  is_active: z.boolean(),
+  metadata: z.unknown().nullable(),
+  tags: z.array(z.string()).nullable(),
+  scores: z.array(z.number()).nullable(),
+});
+
+export const newUserSchema = z.object({
+  id: z.number().optional(),
+  email: z.string(),
+  username: z.string(),
+  created_at: z.union([z.date(), z.string()]).optional(),
+  updated_at: z.union([z.date(), z.string()]).nullable(),
+  is_active: z.boolean().optional(),
+  metadata: z.unknown().nullable(),
+  tags: z.array(z.string()).nullable().optional(),
+  scores: z.array(z.number()).nullable(),
+});
+
+export const userUpdateSchema = z.object({
+  id: z.number().optional(),
+  email: z.string().optional(),
+  username: z.string().optional(),
+  created_at: z.union([z.date(), z.string()]).optional(),
+  updated_at: z.union([z.date(), z.string()]).nullable().optional(),
+  is_active: z.boolean().optional(),
+  metadata: z.unknown().nullable().optional(),
+  tags: z.array(z.string()).nullable().optional(),
+  scores: z.array(z.number()).nullable().optional(),
+});
+
+export type User = z.infer<typeof userSchema>;
+
+export type NewUser = z.infer<typeof newUserSchema>;
+
+export type UserUpdate = z.infer<typeof userUpdateSchema>;
+
+export const activeUserSchema = z.object({
+  id: z.number().nullable(),
+  email: z.string().nullable(),
+  username: z.string().nullable(),
+  created_at: z.date().nullable(),
+});
+
+export const newActiveUserSchema = z.object({
+  id: z.number().nullable(),
+  email: z.string().nullable(),
+  username: z.string().nullable(),
+  created_at: z.union([z.date(), z.string()]).nullable(),
+});
+
+export const activeUserUpdateSchema = z.object({
+  id: z.number().nullable().optional(),
+  email: z.string().nullable().optional(),
+  username: z.string().nullable().optional(),
+  created_at: z.union([z.date(), z.string()]).nullable().optional(),
+});
+
+export type ActiveUser = z.infer<typeof activeUserSchema>;
+
+export type NewActiveUser = z.infer<typeof newActiveUserSchema>;
+
+export type ActiveUserUpdate = z.infer<typeof activeUserUpdateSchema>;
+
+export const userStatSchema = z.object({
+  id: z.number().nullable(),
+  username: z.string().nullable(),
+  post_count: z.string().nullable(),
+  comment_count: z.string().nullable(),
+});
+
+export const newUserStatSchema = z.object({
+  id: z.number().nullable(),
+  username: z.string().nullable(),
+  post_count: z.union([z.string(), z.number(), z.bigint()]).nullable(),
+  comment_count: z.union([z.string(), z.number(), z.bigint()]).nullable(),
+});
+
+export const userStatUpdateSchema = z.object({
+  id: z.number().nullable().optional(),
+  username: z.string().nullable().optional(),
+  post_count: z.union([z.string(), z.number(), z.bigint()]).nullable().optional(),
+  comment_count: z.union([z.string(), z.number(), z.bigint()]).nullable().optional(),
+});
+
+export type UserStat = z.infer<typeof userStatSchema>;
+
+export type NewUserStat = z.infer<typeof newUserStatSchema>;
+
+export type UserStatUpdate = z.infer<typeof userStatUpdateSchema>;
+
+export const userTagsViewSchema = z.object({
+  id: z.number().nullable(),
+  username: z.string().nullable(),
+  tags: z.array(z.string()).nullable(),
+});
+
+export const newUserTagsViewSchema = z.object({
+  id: z.number().nullable(),
+  username: z.string().nullable(),
+  tags: z.array(z.string()).nullable(),
+});
+
+export const userTagsViewUpdateSchema = z.object({
+  id: z.number().nullable().optional(),
+  username: z.string().nullable().optional(),
+  tags: z.array(z.string()).nullable().optional(),
+});
+
+export type UserTagsView = z.infer<typeof userTagsViewSchema>;
+
+export type NewUserTagsView = z.infer<typeof newUserTagsViewSchema>;
+
+export type UserTagsViewUpdate = z.infer<typeof userTagsViewUpdateSchema>;
+"
+`;

@@ -51,6 +51,54 @@ npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 | `--camel-case` | Convert names to camelCase |
 | `--include-pattern <glob>` | Only include matching tables |
 | `--exclude-pattern <glob>` | Exclude matching tables |
+| `--zod` | Generate Zod schemas instead of TypeScript interfaces |
+
+## Zod Schema Generation
+
+Generate Zod validation schemas with inferred types instead of TypeScript interfaces. Requires Zod v4+:
+
+```sh
+npm install zod@4
+npx kysely-gen --zod
+```
+
+This generates `db-schemas.ts` with Zod schemas and inferred types:
+
+```typescript
+import { z } from 'zod';
+
+export const userSchema = z.object({
+  id: z.number(),
+  email: z.string(),
+  name: z.string().nullable(),
+  createdAt: z.date(),
+});
+
+export const newUserSchema = z.object({
+  id: z.number().optional(),
+  email: z.string(),
+  name: z.string().nullable().optional(),
+  createdAt: z.union([z.date(), z.string()]).optional(),
+});
+
+export const userUpdateSchema = z.object({
+  id: z.number().optional(),
+  email: z.string().optional(),
+  name: z.string().nullable().optional(),
+  createdAt: z.union([z.date(), z.string()]).optional(),
+});
+
+export type User = z.infer<typeof userSchema>;
+export type NewUser = z.infer<typeof newUserSchema>;
+export type UserUpdate = z.infer<typeof userUpdateSchema>;
+```
+
+Three schemas are generated per table:
+- **Select schema** (`userSchema`): What you get from queries
+- **Insert schema** (`newUserSchema`): For inserts - auto-increment/default columns are optional
+- **Update schema** (`userUpdateSchema`): For updates - all columns are optional
+
+The `--zod` flag replaces TypeScript interface generation. Types are inferred from schemas via `z.infer<>`, ensuring they never drift.
 
 ## Example
 

@@ -4,6 +4,10 @@ import { Pool } from 'pg';
 import { serialize } from '@/ast/serialize';
 import { introspectPostgres as introspectDatabase } from '@/dialects/postgres/introspect';
 import { transformDatabase } from '@/transform';
+import { transformDatabaseToZod } from '@/zod/transform';
+import { serializeZod } from '@/zod/serialize';
+import { writeFile, unlink } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const TEST_DATABASE_URL = 'postgres://test_user:test_password@localhost:5433/test_db';
 
@@ -73,5 +77,86 @@ describe('Integration: Full pipeline', () => {
     expect(output).toContain("import type { ColumnType } from 'kysely'");
     expect(output).toContain('export type Generated<T>');
     expect(output).toContain('export interface DB {');
+  });
+
+  test('should generate Zod schemas from database', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const zodProgram = transformDatabaseToZod(metadata);
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain("import { z } from 'zod';");
+
+    expect(output).toContain('export const userSchema = z.object({');
+    expect(output).toContain('export const newUserSchema = z.object({');
+    expect(output).toContain('export const userUpdateSchema = z.object({');
+
+    expect(output).toContain('export type User = z.infer<typeof userSchema>;');
+    expect(output).toContain('export type NewUser = z.infer<typeof newUserSchema>;');
+    expect(output).toContain('export type UserUpdate = z.infer<typeof userUpdateSchema>;');
+
+    expect(output).toContain('export const statusEnumSchema = z.enum([');
+
+    expect(output).toContain('id: z.number()');
+    expect(output).toContain('email: z.string()');
+
+    expect(output).toMatchSnapshot();
+  });
+
+  test('should generate Zod schemas with camelCase option', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+
+    const zodProgram = transformDatabaseToZod(metadata, { camelCase: true });
+    const output = serializeZod(zodProgram);
+
+    expect(output).toContain('createdAt:');
+    expect(output).not.toContain('created_at:');
+  });
+
+  test('should generate valid Zod schemas that parse data at runtime', async () => {
+    const metadata = await introspectDatabase(db, { schemas: ['public'] });
+    const zodProgram = transformDatabaseToZod(metadata);
+    const code = serializeZod(zodProgram);
+
+    const tempFile = join(import.meta.dir, '__temp_zod_test.ts');
+    try {
+      await writeFile(tempFile, code);
+      const schemas = await import(tempFile);
+
+      const validUser = {
+        id: 1,
+        email: 'test@example.com',
+        username: 'testuser',
+        created_at: new Date(),
+        updated_at: null,
+        is_active: true,
+        metadata: null,
+        tags: ['tag1', 'tag2'],
+        scores: null,
+      };
+      const parsedUser = schemas.userSchema.parse(validUser);
+      expect(parsedUser.id).toBe(1);
+      expect(parsedUser.email).toBe('test@example.com');
+
+      const validNewUser = {
+        email: 'new@example.com',
+        username: 'newuser',
+        updated_at: null,
+        metadata: null,
+        tags: [],
+        scores: null,
+      };
+      const parsedNewUser = schemas.newUserSchema.parse(validNewUser);
+      expect(parsedNewUser.email).toBe('new@example.com');
+
+      const validUpdate = { username: 'updated' };
+      const parsedUpdate = schemas.userUpdateSchema.parse(validUpdate);
+      expect(parsedUpdate.username).toBe('updated');
+
+      expect(() => schemas.userSchema.parse({ id: 'not a number' })).toThrow();
+
+    } finally {
+      await unlink(tempFile).catch(() => {});
+    }
   });
 });
