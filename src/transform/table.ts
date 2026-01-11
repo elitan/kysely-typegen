@@ -51,16 +51,26 @@ export function transformColumn(
       };
     }
   } else if (column.checkConstraint) {
-    const literalTypes: TypeNode[] = column.checkConstraint.values.map((v) => ({
-      kind: 'literal' as const,
-      value: v,
-    }));
+    if (column.checkConstraint.type === 'boolean') {
+      type = { kind: 'primitive', value: 'boolean' };
+      if (column.isNullable) {
+        type = {
+          kind: 'union',
+          types: [type, { kind: 'primitive', value: 'null' }],
+        };
+      }
+    } else {
+      const literalTypes: TypeNode[] = column.checkConstraint.values.map((v) => ({
+        kind: 'literal' as const,
+        value: v,
+      }));
 
-    if (column.isNullable) {
-      literalTypes.push({ kind: 'primitive', value: 'null' });
+      if (column.isNullable) {
+        literalTypes.push({ kind: 'primitive', value: 'null' });
+      }
+
+      type = { kind: 'union', types: literalTypes };
     }
-
-    type = { kind: 'union', types: literalTypes };
   } else {
     type = mapType(column.dataType, {
       isNullable: column.isNullable,

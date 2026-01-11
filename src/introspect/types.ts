@@ -4,7 +4,8 @@
 
 export type CheckConstraintValues =
   | { type: 'string'; values: string[] }
-  | { type: 'number'; values: number[] };
+  | { type: 'number'; values: number[] }
+  | { type: 'boolean' };
 
 export type ColumnMetadata = {
   name: string;
