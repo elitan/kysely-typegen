@@ -1,8 +1,9 @@
 import type { Kysely } from 'kysely';
 import { sql } from 'kysely';
-import type { ColumnMetadata, DatabaseMetadata, EnumMetadata, TableMetadata } from '@/introspect/types';
+import type { CheckConstraintValues, ColumnMetadata, DatabaseMetadata, EnumMetadata, TableMetadata } from '@/introspect/types';
 import type { IntrospectOptions } from '@/dialects/types';
 import { parseEnumValues, isEnumType } from './enum-parser';
+import { parseMysqlCheckConstraint } from '@/utils/check-constraint-parser';
 
 type RawColumn = {
   TABLE_SCHEMA: string;
@@ -16,16 +17,36 @@ type RawColumn = {
   COLUMN_COMMENT: string | null;
 };
 
+type RawCheckConstraint = {
+  CONSTRAINT_SCHEMA: string;
+  TABLE_NAME: string;
+  CHECK_CLAUSE: string;
+};
+
+type CheckConstraintMap = Map<string, CheckConstraintValues>;
+
 export async function introspectMysql(
   db: Kysely<any>,
   options: IntrospectOptions,
 ): Promise<DatabaseMetadata> {
-  const [baseTables, views] = await Promise.all([
+  const [baseTables, views, checkConstraints] = await Promise.all([
     introspectTables(db, options.schemas),
     introspectViews(db, options.schemas),
+    introspectCheckConstraints(db, options.schemas),
   ]);
 
-  const tables = [...baseTables, ...views];
+  const tables = [...baseTables, ...views].map((table) => ({
+    ...table,
+    columns: table.columns.map((column) => {
+      const key = `${table.schema}.${table.name}.${column.name}`;
+      const checkConstraint = checkConstraints.get(key);
+      return {
+        ...column,
+        ...(checkConstraint && { checkConstraint }),
+      };
+    }),
+  }));
+
   const enums = extractEnums(tables);
 
   return {
@@ -160,4 +181,36 @@ function extractEnums(tables: TableMetadata[]): EnumMetadata[] {
   }
 
   return Array.from(enumMap.values());
+}
+
+async function introspectCheckConstraints(
+  db: Kysely<any>,
+  schemas: string[]
+): Promise<CheckConstraintMap> {
+  const rawConstraints = await sql<RawCheckConstraint>`
+    SELECT
+      tc.TABLE_SCHEMA AS CONSTRAINT_SCHEMA,
+      tc.TABLE_NAME,
+      cc.CHECK_CLAUSE
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+    JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+      ON tc.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA
+      AND tc.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+    WHERE tc.CONSTRAINT_TYPE = 'CHECK'
+      AND tc.TABLE_SCHEMA IN (${sql.join(schemas.map(s => sql`${s}`))})
+  `.execute(db);
+
+  const constraintMap: CheckConstraintMap = new Map();
+
+  for (const row of rawConstraints.rows) {
+    const parsed = parseMysqlCheckConstraint(row.CHECK_CLAUSE);
+    if (!parsed) continue;
+
+    const key = `${row.CONSTRAINT_SCHEMA}.${row.TABLE_NAME}.${parsed.columnName}`;
+    if (constraintMap.has(key)) continue;
+
+    constraintMap.set(key, parsed.constraint);
+  }
+
+  return constraintMap;
 }

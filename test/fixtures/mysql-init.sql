@@ -84,6 +84,17 @@ CREATE TABLE metrics (
   year_val YEAR
 );
 
+-- Table with CHECK constraints (MySQL 8.0.16+)
+CREATE TABLE check_test (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  status VARCHAR(20),
+  priority VARCHAR(20),
+  is_verified TINYINT,
+  CONSTRAINT chk_status CHECK (status IN ('active', 'inactive', 'pending')),
+  CONSTRAINT chk_priority CHECK (priority IN ('low', 'medium', 'high')),
+  CONSTRAINT chk_verified CHECK (is_verified IN (0, 1))
+);
+
 -- Table in test_schema
 USE test_schema;
 
@@ -94,6 +105,13 @@ CREATE TABLE tasks (
   priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
   assignee_email VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE check_tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  level VARCHAR(20),
+  CONSTRAINT chk_level CHECK (level IN ('beginner', 'intermediate', 'advanced'))
 );
 
 -- Create a view in test_schema
