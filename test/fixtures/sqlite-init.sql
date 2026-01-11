@@ -52,6 +52,15 @@ CREATE TABLE metrics (
   blob_val BLOB
 );
 
+-- Table with boolean pattern CHECK constraints
+CREATE TABLE settings (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  is_enabled INTEGER NOT NULL CHECK(is_enabled IN (0, 1)),
+  is_public INTEGER CHECK(is_public IN (0, 1)),
+  priority INTEGER CHECK(priority IN (1, 2, 3, 4, 5))
+);
+
 -- Create a view
 CREATE VIEW active_users AS
 SELECT id, email, username, created_at

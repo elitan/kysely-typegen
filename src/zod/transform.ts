@@ -85,7 +85,9 @@ function transformColumnToZod(
       schema = { kind: 'zod-modified', schema, modifiers };
     }
   } else if (column.checkConstraint) {
-    if (column.checkConstraint.type === 'string') {
+    if (column.checkConstraint.type === 'boolean') {
+      schema = { kind: 'zod-primitive', method: 'boolean' };
+    } else if (column.checkConstraint.type === 'string') {
       schema = { kind: 'zod-enum', values: column.checkConstraint.values };
     } else {
       schema = {

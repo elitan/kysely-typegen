@@ -1,6 +1,7 @@
 export type ParsedCheckConstraint =
   | { type: 'string'; values: string[] }
-  | { type: 'number'; values: number[] };
+  | { type: 'number'; values: number[] }
+  | { type: 'boolean' };
 
 const ANY_ARRAY_REGEX = /= ANY \(\(?ARRAY\[(.*?)\]\)?(?:::[\w\[\]]+)?\)/;
 const OR_CHAIN_REGEX = /\(\([^)]+= '([^']+)'(?:::[\w]+)?\)(?: OR \([^)]+= '([^']+)'(?:::[\w]+)?\))+\)/;
@@ -97,4 +98,37 @@ function parseOrChain(definition: string): string[] | null {
   }
 
   return values.length > 0 ? values : null;
+}
+
+const SQLITE_IN_REGEX = /\w+\s+IN\s*\(([^)]+)\)/i;
+
+export function parseSqliteCheckConstraint(
+  definition: string
+): ParsedCheckConstraint | null {
+  const match = definition.match(SQLITE_IN_REGEX);
+  if (!match) return null;
+
+  const valuesPart = match[1];
+  if (!valuesPart || valuesPart.trim() === '') return null;
+
+  const numericValues = parseNumericArray(valuesPart);
+  if (numericValues !== null) {
+    if (isBooleanPattern(numericValues)) {
+      return { type: 'boolean' };
+    }
+    return { type: 'number', values: numericValues };
+  }
+
+  const stringValues = parseStringArray(valuesPart);
+  if (stringValues !== null && stringValues.length > 0) {
+    return { type: 'string', values: stringValues };
+  }
+
+  return null;
+}
+
+function isBooleanPattern(values: number[]): boolean {
+  if (values.length !== 2) return false;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[0] === 0 && sorted[1] === 1;
 }

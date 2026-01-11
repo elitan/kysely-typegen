@@ -218,4 +218,47 @@ describe('SQLite Introspector', () => {
     expect(userIdColumn?.isNullable).toBe(false);
     expect(userIdColumn?.isAutoIncrement).toBe(false);
   });
+
+  test('should introspect CHECK constraints with string values', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+
+    const posts = metadata.tables.find((t) => t.name === 'posts');
+    const statusColumn = posts?.columns.find((c) => c.name === 'status');
+
+    expect(statusColumn?.checkConstraint).toEqual({
+      type: 'string',
+      values: ['draft', 'published', 'archived'],
+    });
+  });
+
+  test('should introspect CHECK constraints with boolean pattern (0, 1)', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+
+    const settings = metadata.tables.find((t) => t.name === 'settings');
+    const isEnabledColumn = settings?.columns.find((c) => c.name === 'is_enabled');
+
+    expect(isEnabledColumn?.checkConstraint).toEqual({ type: 'boolean' });
+  });
+
+  test('should introspect nullable CHECK constraint with boolean pattern', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+
+    const settings = metadata.tables.find((t) => t.name === 'settings');
+    const isPublicColumn = settings?.columns.find((c) => c.name === 'is_public');
+
+    expect(isPublicColumn?.checkConstraint).toEqual({ type: 'boolean' });
+    expect(isPublicColumn?.isNullable).toBe(true);
+  });
+
+  test('should introspect CHECK constraints with numeric values', async () => {
+    const metadata = await introspectSqlite(db, { schemas: ['main'] });
+
+    const settings = metadata.tables.find((t) => t.name === 'settings');
+    const priorityColumn = settings?.columns.find((c) => c.name === 'priority');
+
+    expect(priorityColumn?.checkConstraint).toEqual({
+      type: 'number',
+      values: [1, 2, 3, 4, 5],
+    });
+  });
 });
