@@ -87,22 +87,16 @@ function transformColumnToZod(
     }
   } else if (column.checkConstraint) {
     if (column.checkConstraint.type === 'boolean') {
-      const unionSchema: ZodSchemaNode = {
-        kind: 'zod-union',
-        schemas: [
-          { kind: 'zod-literal', value: 0 },
-          { kind: 'zod-literal', value: 1 },
-        ],
-      };
-
       if (options?.noBooleanCoerce) {
-        schema = unionSchema;
-      } else {
         schema = {
-          kind: 'zod-transform',
-          schema: unionSchema,
-          transformFn: 'v => v === 1',
+          kind: 'zod-union',
+          schemas: [
+            { kind: 'zod-literal', value: 0 },
+            { kind: 'zod-literal', value: 1 },
+          ],
         };
+      } else {
+        schema = { kind: 'zod-coerce', method: 'boolean' };
       }
     } else if (column.checkConstraint.type === 'string') {
       schema = { kind: 'zod-enum', values: column.checkConstraint.values };

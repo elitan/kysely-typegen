@@ -129,6 +129,20 @@ describe('Zod Serializer', () => {
         modifiers: ['nullable'],
       })).toBe('z.union([z.literal(0), z.literal(1)]).transform(v => v === 1).nullable()');
     });
+
+    test('should serialize coerce', () => {
+      expect(serializeZodSchema({ kind: 'zod-coerce', method: 'boolean' })).toBe('z.coerce.boolean()');
+      expect(serializeZodSchema({ kind: 'zod-coerce', method: 'string' })).toBe('z.coerce.string()');
+      expect(serializeZodSchema({ kind: 'zod-coerce', method: 'number' })).toBe('z.coerce.number()');
+    });
+
+    test('should serialize coerce with modifiers', () => {
+      expect(serializeZodSchema({
+        kind: 'zod-modified',
+        schema: { kind: 'zod-coerce', method: 'boolean' },
+        modifiers: ['nullable'],
+      })).toBe('z.coerce.boolean().nullable()');
+    });
   });
 
   describe('serializeZod (full program)', () => {

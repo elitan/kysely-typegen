@@ -1,5 +1,6 @@
 import type {
   ZodArrayNode,
+  ZodCoerceNode,
   ZodCustomNode,
   ZodDeclarationNode,
   ZodEnumNode,
@@ -69,6 +70,8 @@ export function serializeZodSchema(node: ZodSchemaNode): string {
       return serializeZodCustom(node);
     case 'zod-transform':
       return serializeZodTransform(node);
+    case 'zod-coerce':
+      return serializeZodCoerce(node);
   }
 }
 
@@ -128,6 +131,10 @@ function serializeZodCustom(node: ZodCustomNode): string {
 
 function serializeZodTransform(node: ZodTransformNode): string {
   return `${serializeZodSchema(node.schema)}.transform(${node.transformFn})`;
+}
+
+function serializeZodCoerce(node: ZodCoerceNode): string {
+  return `z.coerce.${node.method}()`;
 }
 
 function serializeZodDeclaration(node: ZodDeclarationNode): string {
