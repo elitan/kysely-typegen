@@ -75,7 +75,8 @@
     "mysql2": "^3.11.0",
     "tarn": "^3.0.2",
     "tedious": "^18.0.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "zod": "^4.3.5"
   },
   "peerDependencies": {
     "kysely": ">=0.27.0 <1.0.0",
@@ -84,7 +85,7 @@
     "better-sqlite3": ">=9.0.0 <13.0.0",
     "tedious": ">=16.0.0 <19.0.0",
     "tarn": ">=3.0.0 <4.0.0",
-    "zod": ">=3.0.0 <4.0.0"
+    "zod": ">=4.0.0 <5.0.0"
   },
   "peerDependenciesMeta": {
     "pg": {

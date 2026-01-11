@@ -55,10 +55,10 @@ npx kysely-gen --dialect mysql --url mysql://user:pass@localhost:3306/db
 
 ## Zod Schema Generation
 
-Generate Zod validation schemas with inferred types instead of TypeScript interfaces:
+Generate Zod validation schemas with inferred types instead of TypeScript interfaces. Requires Zod v4+:
 
 ```sh
-npm install zod
+npm install zod@4
 npx kysely-gen --zod
 ```
 
