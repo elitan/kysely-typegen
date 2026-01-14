@@ -11,13 +11,14 @@ import { getDialect, detectDialect } from '@/dialects';
 import type { DialectName } from '@/dialects/types';
 import { transformDatabaseToZod } from '@/zod/transform';
 import { serializeZod } from '@/zod/serialize';
+import pkg from '../package.json';
 
 const program = new Command();
 
 program
   .name('kysely-gen')
   .description('Generate Kysely types from your database')
-  .version('0.1.0')
+  .version(pkg.version)
   .option('-o, --out <path>', 'Output file path', './db.d.ts')
   .option('-s, --schema <name>', 'Schema to introspect (can be specified multiple times)', collect, [])
   .option('--url <connection-string>', 'Database connection string (overrides DATABASE_URL env)')
@@ -107,7 +108,7 @@ async function generate(options: {
   const schemas = options.schema.length > 0 ? options.schema : [defaultSchema];
 
   log('');
-  log(chalk.bold('kysely-gen') + chalk.dim(' v0.1.0'));
+  log(chalk.bold('kysely-gen') + chalk.dim(` v${pkg.version}`));
   log('');
   log(chalk.dim('Dialect:'), dialectName);
   log(chalk.dim('Connection:'), maskPassword(databaseUrl));

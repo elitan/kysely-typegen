@@ -2,11 +2,27 @@ import { describe, expect, test } from 'bun:test';
 import { spawn } from 'bun';
 import { resolve } from 'node:path';
 import { unlink, writeFile } from 'node:fs/promises';
+import pkg from '../package.json';
 
 const TEST_DATABASE_URL = 'postgres://test_user:test_password@localhost:5433/test_db';
 const CLI_PATH = resolve(import.meta.dir, '../src/cli.ts');
 
 describe('CLI', () => {
+  describe('--version flag', () => {
+    test('should output version from package.json', async () => {
+      const proc = spawn({
+        cmd: ['bun', CLI_PATH, '--version'],
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      const stdout = await new Response(proc.stdout).text();
+      await proc.exited;
+
+      expect(stdout.trim()).toBe(pkg.version);
+    });
+  });
+
   describe('--print flag', () => {
     test('should output TypeScript code to stdout', async () => {
       const proc = spawn({
