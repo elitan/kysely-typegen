@@ -89,9 +89,9 @@ describe('Transform', () => {
         expect(generatedType.name).toBe('Generated<T>');
       }
 
-      // Check User interface
+      // Check Users interface
       const userInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'User'
+        (d) => d.kind === 'interface' && d.name === 'Users'
       );
       expect(userInterface).toBeDefined();
       if (userInterface?.kind === 'interface') {
@@ -116,7 +116,7 @@ describe('Transform', () => {
       if (dbInterface?.kind === 'interface') {
         expect(dbInterface.properties).toHaveLength(1);
         expect(dbInterface.properties[0]?.name).toBe('users');
-        expect(dbInterface.properties[0]?.type).toEqual({ kind: 'reference', name: 'User' });
+        expect(dbInterface.properties[0]?.type).toEqual({ kind: 'reference', name: 'Users' });
       }
     });
 
@@ -172,7 +172,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const postInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Post'
+        (d) => d.kind === 'interface' && d.name === 'Posts'
       );
       if (postInterface?.kind === 'interface') {
         const contentProp = postInterface.properties.find((p) => p.name === 'content');
@@ -219,7 +219,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const commentInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Comment'
+        (d) => d.kind === 'interface' && d.name === 'Comments'
       );
 
       expect(commentInterface).toBeDefined();
@@ -259,7 +259,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const commentInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Comment'
+        (d) => d.kind === 'interface' && d.name === 'Comments'
       );
 
       if (commentInterface?.kind === 'interface') {
@@ -318,7 +318,7 @@ describe('Transform', () => {
         (d) => d.kind === 'interface' && d.name !== 'DB' && d.name !== 'IPostgresInterval'
       );
       expect(tableInterfaces).toHaveLength(1);
-      expect(tableInterfaces[0]?.name).toBe('User');
+      expect(tableInterfaces[0]?.name).toBe('Users');
     });
 
     test('should exclude matching tables with exclude pattern', () => {
@@ -332,10 +332,10 @@ describe('Transform', () => {
       expect(tableInterfaces).toHaveLength(3);
 
       const names = tableInterfaces.map((i) => i.name);
-      expect(names).toContain('User');
-      expect(names).toContain('Post');
-      expect(names).toContain('Session');
-      expect(names).not.toContain('InternalLog');
+      expect(names).toContain('Users');
+      expect(names).toContain('Posts');
+      expect(names).toContain('Sessions');
+      expect(names).not.toContain('InternalLogs');
     });
 
     test('should handle multiple include patterns', () => {
@@ -349,8 +349,8 @@ describe('Transform', () => {
       expect(tableInterfaces).toHaveLength(2);
 
       const names = tableInterfaces.map((i) => i.name);
-      expect(names).toContain('User');
-      expect(names).toContain('Session');
+      expect(names).toContain('Users');
+      expect(names).toContain('Sessions');
     });
 
     test('should combine include and exclude patterns', () => {
@@ -365,9 +365,9 @@ describe('Transform', () => {
       expect(tableInterfaces).toHaveLength(2);
 
       const names = tableInterfaces.map((i) => i.name);
-      expect(names).toContain('User');
-      expect(names).toContain('Post');
-      expect(names).not.toContain('InternalLog');
+      expect(names).toContain('Users');
+      expect(names).toContain('Posts');
+      expect(names).not.toContain('InternalLogs');
     });
 
     test('should update DB interface with filtered tables only', () => {
@@ -487,7 +487,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const productInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Product'
+        (d) => d.kind === 'interface' && d.name === 'Products'
       );
 
       expect(productInterface).toBeDefined();
@@ -646,7 +646,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const complexInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'ComplexType'
+        (d) => d.kind === 'interface' && d.name === 'ComplexTypes'
       );
 
       expect(complexInterface).toBeDefined();
@@ -755,7 +755,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const typeInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Type'
+        (d) => d.kind === 'interface' && d.name === 'Types'
       );
 
       expect(typeInterface).toBeDefined();
@@ -988,7 +988,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const defaultInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Default'
+        (d) => d.kind === 'interface' && d.name === 'Defaults'
       );
 
       expect(defaultInterface).toBeDefined();
@@ -1094,7 +1094,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const configInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Config'
+        (d) => d.kind === 'interface' && d.name === 'Configs'
       );
       expect(configInterface).toBeDefined();
       if (configInterface?.kind === 'interface') {
@@ -1126,7 +1126,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const eventInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Event'
+        (d) => d.kind === 'interface' && d.name === 'Events'
       );
       if (eventInterface?.kind === 'interface') {
         const metadataProp = eventInterface.properties.find((p) => p.name === 'metadata');
@@ -1209,7 +1209,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const eventInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Event'
+        (d) => d.kind === 'interface' && d.name === 'Events'
       );
       expect(eventInterface).toBeDefined();
       if (eventInterface?.kind === 'interface') {
@@ -1322,7 +1322,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const userInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'User'
+        (d) => d.kind === 'interface' && d.name === 'Users'
       );
       expect(userInterface).toBeDefined();
       if (userInterface?.kind === 'interface') {
@@ -1411,7 +1411,7 @@ describe('Transform', () => {
       const { program } = transformDatabase(metadata);
 
       const logInterface = program.declarations.find(
-        (d) => d.kind === 'interface' && d.name === 'Log'
+        (d) => d.kind === 'interface' && d.name === 'Logs'
       );
       expect(logInterface).toBeDefined();
       if (logInterface?.kind === 'interface') {

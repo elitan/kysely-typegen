@@ -9,7 +9,7 @@ import type {
 } from './nodes';
 import { mapPostgresTypeToZod } from './type-mapper';
 import { toCamelCase } from '@/utils/case-converter';
-import { toPascalCase, singularize } from '@/transform/utils';
+import { toPascalCase } from '@/transform/utils';
 import { EnumNameResolver } from '@/transform/enum';
 
 export type ZodTransformOptions = {
@@ -132,7 +132,7 @@ function transformTableToZod(
   mode: 'select' | 'insert' | 'update',
   options?: ZodTransformOptions
 ): ZodSchemaDeclaration {
-  const baseName = toPascalCase(singularize(table.name));
+  const baseName = toPascalCase(table.name);
   const schemaName = getSchemaName(baseName, mode);
 
   const properties = table.columns.map((col) =>
@@ -170,7 +170,7 @@ export function transformDatabaseToZod(
   }
 
   for (const table of metadata.tables) {
-    const baseName = toPascalCase(singularize(table.name));
+    const baseName = toPascalCase(table.name);
 
     declarations.push(transformTableToZod(table, metadata.enums, enumResolver, 'select', options));
     declarations.push(transformTableToZod(table, metadata.enums, enumResolver, 'insert', options));

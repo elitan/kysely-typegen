@@ -41,7 +41,7 @@ export interface CheckConstraintsTest {
   regex_col: string | null;
 }
 
-export interface Comment {
+export interface Comments {
   id: Generated<number>;
   post_id: number;
   user_id: number;
@@ -55,14 +55,14 @@ export interface DomainCheckTest {
   status: 'draft' | 'published' | 'archived';
 }
 
-export interface Measurement {
+export interface Measurements {
   id: Generated<number>;
   measure_date: Timestamp;
   value: Numeric;
   sensor_id: number;
 }
 
-export interface Post {
+export interface Posts {
   id: Generated<number>;
   user_id: number;
   title: string;
@@ -71,7 +71,7 @@ export interface Post {
   view_count: Generated<number>;
 }
 
-export interface User {
+export interface Users {
   id: Generated<number>;
   email: string;
   username: string;
@@ -83,14 +83,14 @@ export interface User {
   scores: number[] | null;
 }
 
-export interface ActiveUser {
+export interface ActiveUsers {
   id: number | null;
   email: string | null;
   username: string | null;
   created_at: Timestamp | null;
 }
 
-export interface UserStat {
+export interface UserStats {
   id: number | null;
   username: string | null;
   post_count: Int8 | null;
@@ -105,13 +105,13 @@ export interface UserTagsView {
 
 export interface DB {
   check_constraints_test: CheckConstraintsTest;
-  comments: Comment;
+  comments: Comments;
   domain_check_test: DomainCheckTest;
-  measurements: Measurement;
-  posts: Post;
-  users: User;
-  active_users: ActiveUser;
-  user_stats: UserStat;
+  measurements: Measurements;
+  posts: Posts;
+  users: Users;
+  active_users: ActiveUsers;
+  user_stats: UserStats;
   user_tags_view: UserTagsView;
 }
 "
@@ -158,7 +158,7 @@ export type NewCheckConstraintsTest = z.infer<typeof newCheckConstraintsTestSche
 
 export type CheckConstraintsTestUpdate = z.infer<typeof checkConstraintsTestUpdateSchema>;
 
-export const commentSchema = z.object({
+export const commentsSchema = z.object({
   id: z.number(),
   post_id: z.number(),
   user_id: z.number(),
@@ -167,7 +167,7 @@ export const commentSchema = z.object({
   created_at: z.date(),
 });
 
-export const newCommentSchema = z.object({
+export const newCommentsSchema = z.object({
   id: z.number().optional(),
   post_id: z.number(),
   user_id: z.number(),
@@ -176,7 +176,7 @@ export const newCommentSchema = z.object({
   created_at: z.union([z.date(), z.string()]).optional(),
 });
 
-export const commentUpdateSchema = z.object({
+export const commentsUpdateSchema = z.object({
   id: z.number().optional(),
   post_id: z.number().optional(),
   user_id: z.number().optional(),
@@ -185,11 +185,11 @@ export const commentUpdateSchema = z.object({
   created_at: z.union([z.date(), z.string()]).optional(),
 });
 
-export type Comment = z.infer<typeof commentSchema>;
+export type Comments = z.infer<typeof commentsSchema>;
 
-export type NewComment = z.infer<typeof newCommentSchema>;
+export type NewComments = z.infer<typeof newCommentsSchema>;
 
-export type CommentUpdate = z.infer<typeof commentUpdateSchema>;
+export type CommentsUpdate = z.infer<typeof commentsUpdateSchema>;
 
 export const domainCheckTestSchema = z.object({
   id: z.number(),
@@ -212,32 +212,32 @@ export type NewDomainCheckTest = z.infer<typeof newDomainCheckTestSchema>;
 
 export type DomainCheckTestUpdate = z.infer<typeof domainCheckTestUpdateSchema>;
 
-export const measurementSchema = z.object({
+export const measurementsSchema = z.object({
   id: z.number(),
   measure_date: z.date(),
   value: z.string(),
   sensor_id: z.number(),
 });
 
-export const newMeasurementSchema = z.object({
+export const newMeasurementsSchema = z.object({
   id: z.number().optional(),
   measure_date: z.union([z.date(), z.string()]),
   value: z.union([z.string(), z.number()]),
   sensor_id: z.number(),
 });
 
-export const measurementUpdateSchema = z.object({
+export const measurementsUpdateSchema = z.object({
   id: z.number().optional(),
   measure_date: z.union([z.date(), z.string()]).optional(),
   value: z.union([z.string(), z.number()]).optional(),
   sensor_id: z.number().optional(),
 });
 
-export type Measurement = z.infer<typeof measurementSchema>;
+export type Measurements = z.infer<typeof measurementsSchema>;
 
-export type NewMeasurement = z.infer<typeof newMeasurementSchema>;
+export type NewMeasurements = z.infer<typeof newMeasurementsSchema>;
 
-export type MeasurementUpdate = z.infer<typeof measurementUpdateSchema>;
+export type MeasurementsUpdate = z.infer<typeof measurementsUpdateSchema>;
 
 export const measurements2024Q1Schema = z.object({
   id: z.number(),
@@ -293,7 +293,7 @@ export type NewMeasurements2024Q2 = z.infer<typeof newMeasurements2024Q2Schema>;
 
 export type Measurements2024Q2Update = z.infer<typeof measurements2024Q2UpdateSchema>;
 
-export const postSchema = z.object({
+export const postsSchema = z.object({
   id: z.number(),
   user_id: z.number(),
   title: z.string(),
@@ -302,7 +302,7 @@ export const postSchema = z.object({
   view_count: z.number(),
 });
 
-export const newPostSchema = z.object({
+export const newPostsSchema = z.object({
   id: z.number().optional(),
   user_id: z.number(),
   title: z.string(),
@@ -311,7 +311,7 @@ export const newPostSchema = z.object({
   view_count: z.number().optional(),
 });
 
-export const postUpdateSchema = z.object({
+export const postsUpdateSchema = z.object({
   id: z.number().optional(),
   user_id: z.number().optional(),
   title: z.string().optional(),
@@ -320,13 +320,13 @@ export const postUpdateSchema = z.object({
   view_count: z.number().optional(),
 });
 
-export type Post = z.infer<typeof postSchema>;
+export type Posts = z.infer<typeof postsSchema>;
 
-export type NewPost = z.infer<typeof newPostSchema>;
+export type NewPosts = z.infer<typeof newPostsSchema>;
 
-export type PostUpdate = z.infer<typeof postUpdateSchema>;
+export type PostsUpdate = z.infer<typeof postsUpdateSchema>;
 
-export const userSchema = z.object({
+export const usersSchema = z.object({
   id: z.number(),
   email: z.string(),
   username: z.string(),
@@ -338,7 +338,7 @@ export const userSchema = z.object({
   scores: z.array(z.number()).nullable(),
 });
 
-export const newUserSchema = z.object({
+export const newUsersSchema = z.object({
   id: z.number().optional(),
   email: z.string(),
   username: z.string(),
@@ -350,7 +350,7 @@ export const newUserSchema = z.object({
   scores: z.array(z.number()).nullable(),
 });
 
-export const userUpdateSchema = z.object({
+export const usersUpdateSchema = z.object({
   id: z.number().optional(),
   email: z.string().optional(),
   username: z.string().optional(),
@@ -362,65 +362,65 @@ export const userUpdateSchema = z.object({
   scores: z.array(z.number()).nullable().optional(),
 });
 
-export type User = z.infer<typeof userSchema>;
+export type Users = z.infer<typeof usersSchema>;
 
-export type NewUser = z.infer<typeof newUserSchema>;
+export type NewUsers = z.infer<typeof newUsersSchema>;
 
-export type UserUpdate = z.infer<typeof userUpdateSchema>;
+export type UsersUpdate = z.infer<typeof usersUpdateSchema>;
 
-export const activeUserSchema = z.object({
+export const activeUsersSchema = z.object({
   id: z.number().nullable(),
   email: z.string().nullable(),
   username: z.string().nullable(),
   created_at: z.date().nullable(),
 });
 
-export const newActiveUserSchema = z.object({
+export const newActiveUsersSchema = z.object({
   id: z.number().nullable(),
   email: z.string().nullable(),
   username: z.string().nullable(),
   created_at: z.union([z.date(), z.string()]).nullable(),
 });
 
-export const activeUserUpdateSchema = z.object({
+export const activeUsersUpdateSchema = z.object({
   id: z.number().nullable().optional(),
   email: z.string().nullable().optional(),
   username: z.string().nullable().optional(),
   created_at: z.union([z.date(), z.string()]).nullable().optional(),
 });
 
-export type ActiveUser = z.infer<typeof activeUserSchema>;
+export type ActiveUsers = z.infer<typeof activeUsersSchema>;
 
-export type NewActiveUser = z.infer<typeof newActiveUserSchema>;
+export type NewActiveUsers = z.infer<typeof newActiveUsersSchema>;
 
-export type ActiveUserUpdate = z.infer<typeof activeUserUpdateSchema>;
+export type ActiveUsersUpdate = z.infer<typeof activeUsersUpdateSchema>;
 
-export const userStatSchema = z.object({
+export const userStatsSchema = z.object({
   id: z.number().nullable(),
   username: z.string().nullable(),
   post_count: z.string().nullable(),
   comment_count: z.string().nullable(),
 });
 
-export const newUserStatSchema = z.object({
+export const newUserStatsSchema = z.object({
   id: z.number().nullable(),
   username: z.string().nullable(),
   post_count: z.union([z.string(), z.number(), z.bigint()]).nullable(),
   comment_count: z.union([z.string(), z.number(), z.bigint()]).nullable(),
 });
 
-export const userStatUpdateSchema = z.object({
+export const userStatsUpdateSchema = z.object({
   id: z.number().nullable().optional(),
   username: z.string().nullable().optional(),
   post_count: z.union([z.string(), z.number(), z.bigint()]).nullable().optional(),
   comment_count: z.union([z.string(), z.number(), z.bigint()]).nullable().optional(),
 });
 
-export type UserStat = z.infer<typeof userStatSchema>;
+export type UserStats = z.infer<typeof userStatsSchema>;
 
-export type NewUserStat = z.infer<typeof newUserStatSchema>;
+export type NewUserStats = z.infer<typeof newUserStatsSchema>;
 
-export type UserStatUpdate = z.infer<typeof userStatUpdateSchema>;
+export type UserStatsUpdate = z.infer<typeof userStatsUpdateSchema>;
 
 export const userTagsViewSchema = z.object({
   id: z.number().nullable(),

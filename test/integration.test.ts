@@ -36,9 +36,9 @@ describe('Integration: Full pipeline', () => {
     // Basic sanity checks
     expect(output).toContain("import type { ColumnType } from 'kysely'");
     expect(output).toContain('export type Generated<T>');
-    expect(output).toContain('export interface User {');
-    expect(output).toContain('export interface Post {');
-    expect(output).toContain('export interface Comment {');
+    expect(output).toContain('export interface Users {');
+    expect(output).toContain('export interface Posts {');
+    expect(output).toContain('export interface Comments {');
     expect(output).toContain('export interface DB {');
     expect(output).toContain('export type StatusEnum');
 
@@ -87,13 +87,13 @@ describe('Integration: Full pipeline', () => {
 
     expect(output).toContain("import { z } from 'zod';");
 
-    expect(output).toContain('export const userSchema = z.object({');
-    expect(output).toContain('export const newUserSchema = z.object({');
-    expect(output).toContain('export const userUpdateSchema = z.object({');
+    expect(output).toContain('export const usersSchema = z.object({');
+    expect(output).toContain('export const newUsersSchema = z.object({');
+    expect(output).toContain('export const usersUpdateSchema = z.object({');
 
-    expect(output).toContain('export type User = z.infer<typeof userSchema>;');
-    expect(output).toContain('export type NewUser = z.infer<typeof newUserSchema>;');
-    expect(output).toContain('export type UserUpdate = z.infer<typeof userUpdateSchema>;');
+    expect(output).toContain('export type Users = z.infer<typeof usersSchema>;');
+    expect(output).toContain('export type NewUsers = z.infer<typeof newUsersSchema>;');
+    expect(output).toContain('export type UsersUpdate = z.infer<typeof usersUpdateSchema>;');
 
     expect(output).toContain('export const statusEnumSchema = z.enum([');
 
@@ -134,7 +134,7 @@ describe('Integration: Full pipeline', () => {
         tags: ['tag1', 'tag2'],
         scores: null,
       };
-      const parsedUser = schemas.userSchema.parse(validUser);
+      const parsedUser = schemas.usersSchema.parse(validUser);
       expect(parsedUser.id).toBe(1);
       expect(parsedUser.email).toBe('test@example.com');
 
@@ -146,14 +146,14 @@ describe('Integration: Full pipeline', () => {
         tags: [],
         scores: null,
       };
-      const parsedNewUser = schemas.newUserSchema.parse(validNewUser);
+      const parsedNewUser = schemas.newUsersSchema.parse(validNewUser);
       expect(parsedNewUser.email).toBe('new@example.com');
 
       const validUpdate = { username: 'updated' };
-      const parsedUpdate = schemas.userUpdateSchema.parse(validUpdate);
+      const parsedUpdate = schemas.usersUpdateSchema.parse(validUpdate);
       expect(parsedUpdate.username).toBe('updated');
 
-      expect(() => schemas.userSchema.parse({ id: 'not a number' })).toThrow();
+      expect(() => schemas.usersSchema.parse({ id: 'not a number' })).toThrow();
 
     } finally {
       await unlink(tempFile).catch(() => {});

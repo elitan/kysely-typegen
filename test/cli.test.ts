@@ -21,7 +21,7 @@ describe('CLI', () => {
 
       expect(stdout).toContain("import type { ColumnType } from 'kysely'");
       expect(stdout).toContain('export type Generated<T>');
-      expect(stdout).toContain('export interface User {');
+      expect(stdout).toContain('export interface Users {');
       expect(stdout).toContain('export interface DB {');
     });
 
@@ -181,9 +181,9 @@ describe('CLI', () => {
       await proc.exited;
 
       expect(stdout).toContain("import { z } from 'zod';");
-      expect(stdout).toContain('export const userSchema = z.object({');
-      expect(stdout).toContain('export const newUserSchema = z.object({');
-      expect(stdout).toContain('export type User = z.infer<typeof userSchema>;');
+      expect(stdout).toContain('export const usersSchema = z.object({');
+      expect(stdout).toContain('export const newUsersSchema = z.object({');
+      expect(stdout).toContain('export type Users = z.infer<typeof usersSchema>;');
     });
 
     test('should show Zod schemas generated message', async () => {
@@ -223,7 +223,7 @@ describe('CLI', () => {
 
       const content = await Bun.file(testOutputPath).text();
       expect(content).toContain("import { z } from 'zod';");
-      expect(content).toContain('export const userSchema = z.object({');
+      expect(content).toContain('export const usersSchema = z.object({');
 
       await unlink(testOutputPath);
     });

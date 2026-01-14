@@ -2,7 +2,7 @@ import type { InterfaceNode, PropertyNode, TypeNode } from '@/ast/nodes';
 import type { ColumnMetadata, EnumMetadata, TableMetadata } from '@/introspect/types';
 import { toCamelCase } from '@/utils/case-converter';
 import type { TransformOptions, TypeMapper } from '@/transform/types';
-import { toPascalCase, singularize } from '@/transform/utils';
+import { toPascalCase } from '@/transform/utils';
 import type { EnumNameResolver } from '@/transform/enum';
 
 export function transformTable(
@@ -20,7 +20,7 @@ export function transformTable(
 
   return {
     kind: 'interface',
-    name: toPascalCase(singularize(table.name)),
+    name: toPascalCase(table.name),
     properties,
     exported: true,
   };
@@ -115,7 +115,7 @@ export function createDBInterface(tables: TableMetadata[], options?: TransformOp
       name: tableName,
       type: {
         kind: 'reference',
-        name: toPascalCase(singularize(table.name)),
+        name: toPascalCase(table.name),
       },
       optional: false,
     };

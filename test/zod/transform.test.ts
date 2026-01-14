@@ -41,7 +41,7 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
 
     const selectSchema = program.declarations.find(
-      (d) => d.kind === 'zod-schema-declaration' && d.name === 'userSchema'
+      (d) => d.kind === 'zod-schema-declaration' && d.name === 'usersSchema'
     );
     expect(selectSchema).toBeDefined();
     expect(selectSchema?.kind).toBe('zod-schema-declaration');
@@ -67,7 +67,7 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
 
     const insertSchema = program.declarations.find(
-      (d) => d.kind === 'zod-schema-declaration' && d.name === 'newUserSchema'
+      (d) => d.kind === 'zod-schema-declaration' && d.name === 'newUsersSchema'
     );
     expect(insertSchema).toBeDefined();
     if (insertSchema?.kind === 'zod-schema-declaration' && insertSchema.schema.kind === 'zod-object') {
@@ -96,7 +96,7 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
 
     const updateSchema = program.declarations.find(
-      (d) => d.kind === 'zod-schema-declaration' && d.name === 'userUpdateSchema'
+      (d) => d.kind === 'zod-schema-declaration' && d.name === 'usersUpdateSchema'
     );
     expect(updateSchema).toBeDefined();
     if (updateSchema?.kind === 'zod-schema-declaration' && updateSchema.schema.kind === 'zod-object') {
@@ -128,9 +128,9 @@ describe('transformDatabaseToZod', () => {
     expect(inferExports.length).toBe(3);
 
     const typeNames = inferExports.map((d) => (d as { typeName: string }).typeName);
-    expect(typeNames).toContain('User');
-    expect(typeNames).toContain('NewUser');
-    expect(typeNames).toContain('UserUpdate');
+    expect(typeNames).toContain('Users');
+    expect(typeNames).toContain('NewUsers');
+    expect(typeNames).toContain('UsersUpdate');
   });
 
   test('should handle nullable columns', () => {
@@ -149,7 +149,7 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
 
     const selectSchema = program.declarations.find(
-      (d) => d.kind === 'zod-schema-declaration' && d.name === 'userSchema'
+      (d) => d.kind === 'zod-schema-declaration' && d.name === 'usersSchema'
     );
     if (selectSchema?.kind === 'zod-schema-declaration' && selectSchema.schema.kind === 'zod-object') {
       const bioProp = selectSchema.schema.properties.find((p) => p.name === 'bio');
@@ -176,7 +176,7 @@ describe('transformDatabaseToZod', () => {
     const program = transformDatabaseToZod(metadata);
 
     const selectSchema = program.declarations.find(
-      (d) => d.kind === 'zod-schema-declaration' && d.name === 'userSchema'
+      (d) => d.kind === 'zod-schema-declaration' && d.name === 'usersSchema'
     );
     if (selectSchema?.kind === 'zod-schema-declaration' && selectSchema.schema.kind === 'zod-object') {
       const statusProp = selectSchema.schema.properties.find((p) => p.name === 'status');
@@ -231,12 +231,12 @@ describe('transformDatabaseToZod', () => {
     const code = serializeZod(program);
 
     expect(code).toContain("import { z } from 'zod';");
-    expect(code).toContain('export const userSchema = z.object({');
-    expect(code).toContain('export const newUserSchema = z.object({');
-    expect(code).toContain('export const userUpdateSchema = z.object({');
-    expect(code).toContain('export type User = z.infer<typeof userSchema>;');
-    expect(code).toContain('export type NewUser = z.infer<typeof newUserSchema>;');
-    expect(code).toContain('export type UserUpdate = z.infer<typeof userUpdateSchema>;');
+    expect(code).toContain('export const usersSchema = z.object({');
+    expect(code).toContain('export const newUsersSchema = z.object({');
+    expect(code).toContain('export const usersUpdateSchema = z.object({');
+    expect(code).toContain('export type Users = z.infer<typeof usersSchema>;');
+    expect(code).toContain('export type NewUsers = z.infer<typeof newUsersSchema>;');
+    expect(code).toContain('export type UsersUpdate = z.infer<typeof usersUpdateSchema>;');
   });
 
   test('should generate transform for boolean CHECK constraints by default', () => {
