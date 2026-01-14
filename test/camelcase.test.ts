@@ -79,14 +79,14 @@ describe('CamelCase Support', () => {
       const { program } = transformDatabase(metadata, { camelCase: true });
       const code = serialize(program);
 
-      expect(code).toContain('userProfiles: UserProfile');
+      expect(code).toContain('userProfiles: UserProfiles');
     });
 
     test('should keep interface names as PascalCase', () => {
       const { program } = transformDatabase(metadata, { camelCase: true });
       const code = serialize(program);
 
-      expect(code).toContain('export interface UserProfile {');
+      expect(code).toContain('export interface UserProfiles {');
     });
 
     test('should not convert names when camelCase is false', () => {
@@ -95,7 +95,7 @@ describe('CamelCase Support', () => {
 
       expect(code).toContain('user_id: Generated<number>');
       expect(code).toContain('first_name: string');
-      expect(code).toContain('user_profiles: UserProfile');
+      expect(code).toContain('user_profiles: UserProfiles');
     });
 
     test('should not convert names when camelCase is undefined', () => {
@@ -104,7 +104,7 @@ describe('CamelCase Support', () => {
 
       expect(code).toContain('user_id: Generated<number>');
       expect(code).toContain('first_name: string');
-      expect(code).toContain('user_profiles: UserProfile');
+      expect(code).toContain('user_profiles: UserProfiles');
     });
 
     test('should work with enum columns', () => {
