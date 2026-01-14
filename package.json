@@ -1,6 +1,6 @@
 {
   "name": "kysely-gen",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Database type generator for Kysely - Supports PostgreSQL, MySQL, SQLite, and MSSQL",
   "type": "module",
   "license": "MIT",
@@ -63,7 +63,7 @@
     "kysely": "^0.27.4",
     "micromatch": "^4.0.8",
     "ora": "^9.0.0",
-    "pg": "^8.16.3"
+    "pg": "^8.17.0"
   },
   "devDependencies": {
     "@tediousjs/connection-string": "^0.5.0",
